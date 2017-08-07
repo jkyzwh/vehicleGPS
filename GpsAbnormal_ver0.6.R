@@ -38,7 +38,7 @@ library(mice) #前三个包是mice的基础
 #调用函数
 
 source("D:/PROdata/vehicle GPS/GPS/GPS_function_ver0.4.R")
-
+setwd("D:/PROdata/vehicle GPS/GPS")
 # 导入初始化数据
 dataName = 'D:/PROdata/Data/dangerous good transport/sichuan-xcar-2016080810.csv'
 #GpsData_initial =  read.xlsx(GpsData_initial  =  read_csv(dataName),sheetIndex = 1,header = F,encoding = "UTF-8")
@@ -98,7 +98,7 @@ print(map)
 #构造一个空数据框，共9列，行数量为驾驶人数量，列名为data_colnames
 #使用异常行为识别函数，对减加速度进行聚类分析
 vehicleIDList = GPSData_initial[!duplicated(GPSData_initial$vehicleID),]$vehicleID
-vehicleIDList = vehicleIDList[c(1:5000)] #测试用，筛选车辆ID的一部分
+vehicleIDList = vehicleIDList[c(1:500)] #测试用，筛选车辆ID的一部分
 
 MDS_colnames = c("ID","Acc_23","Acc_34","Acc_45","Acc_56","Acc_67","Acc_78",
                    "Dac_23","Dac_34","Dac_45","Dac_56","Dac_67","Dac_78")
@@ -156,7 +156,7 @@ mdsData = mdsData[order,]
 # 处理NA值
 # 利用mice包的函数，利用线形预测模型填充NA值
 
-imp=mice(mdsData,m=1,meth = 'norm.predict') #4重插补，即生成4个无缺失数据集  
+imp=mice(mdsData,m=4,meth = 'norm.predict') #4重插补，即生成4个无缺失数据集  
 mdsData = complete(imp)
 
 
@@ -180,7 +180,7 @@ for (i in 1:(length(mdsDataT)-2))
   }
   print(i)
 }
-rm(tempData,X,Y,i)
+rm(tempData,X,Y,i,imp)
 
 ggplot(plotData,aes(X,Y,colour=ID,group=ID))+
   geom_point(size=1.0)+
@@ -221,28 +221,32 @@ ggplot(plotData,aes(X,Y,colour=ID,group=ID))+
 
 rm(mdsDataT,plotData)
 #利用多维定标方法进行聚类分析
+mdsID = mdsData$ID
+mdsData = mdsData[,c(-1)]
+mds_data.matrix<-as.matrix(mdsData) #将驾驶人特征数据框转化为矩阵
 
-# 处理N/A值和极大异常值
-#mdsData[is.na(mdsData)]<-0  
-
-
-
-a
+#ID_dist<-mds_data.matrix %*% t(mds_data.matrix) #采用矩阵相乘的方式
+ID_dist<-(mds_data.matrix)  #不采用矩阵相乘的方式
+ID_dist<-dist(ID_dist,method="euclidean" ) #计算欧式距离
+ID_MDS<-cmdscale(ID_dist,k=2,eig=T) #采用标准MDS分析
 #ID_MDS<-isoMDS(ID_dist) #非参数iso分析
 
 
 #这是为了检测能否用两个维度的距离来表示高维空间中距离，如果达到了0.8左右则表示是合适的。
-sum(abs(ID_MDS$eig[1:2]))/sum(abs(ID_MDS$eig))
-sum((ID_MDS$eig[1:2])^2)/sum((ID_MDS$eig)^2)
+paste('两个维度的距离来表示高维空间中距离的比例为',sum(abs(ID_MDS$eig[1:2]))/sum(abs(ID_MDS$eig)))
+paste('两个维度的距离来表示高维空间中距离的比例平方为',sum((ID_MDS$eig[1:2])^2)/sum((ID_MDS$eig)^2))
 
 #利用ggplot2输出可视化的MDS分析结果
+library(ggrepel)
 x<-ID_MDS$points[,1]
 y<-ID_MDS$points[,2]
-ggplot(data.frame(x,y),aes(x,y))+
-  geom_point(shape=16,size=3,colour=mdsData$ID)
-#+ geom_text(hjust=-0.1,vjust=0.5,alpha=0.5,label=ID_MDS$ID)
+z = mdsID
+ggplot(data.frame(x,y,z),aes(x,y))+
+  geom_point(shape=16,size=3,colour=z)+
+  geom_text(hjust=0.1,vjust=0.5,alpha=0.5,label=z)
+  #+geom_text_repel(alpha=0.5,label=z) #避免文字标签遮挡
 
-
+mdsData$ID = mdsID
 
 
 

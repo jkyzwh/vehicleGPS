@@ -247,11 +247,15 @@ ggplot(data.frame(x,y,z),aes(x,y))+
   #+geom_text_repel(alpha=0.5,label=z) #避免文字标签遮挡
 
 IDdist = data.frame(x,y)
-IDdist$ID = mdsID
 
 #利用均值聚类，区分不同类别驾驶员
-model2=kmeans(IDdist,centers=3,nstart=10)
+model2=kmeans(IDdist,centers=4,nstart=10)
+IDdist$ID = mdsID
+IDdist$IDkmean = model2$cluster
 
+ggplot(IDdist,aes(x,y,colour=IDkmean))+
+  geom_point(shape=16,size=3)+
+  geom_text(hjust=0.1,vjust=0.5,alpha=0.5,label=z)
 
 
 

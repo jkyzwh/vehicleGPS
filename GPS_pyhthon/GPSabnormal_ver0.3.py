@@ -202,14 +202,17 @@ from sklearn.manifold import MDS
 import matplotlib.pyplot as plt
 
 '''
-构造一个空数据框，共9列，行数量为驾驶人数量，列名为MDS_colnames
+构造一个空数据框，共13列，行数量为驾驶人数量，列名为MDS_colnames
 
 '''
 MDS_colnames = ["ID","Acc_23","Acc_34","Acc_45","Acc_56","Acc_67","Acc_78",
                    "Dac_23","Dac_34","Dac_45","Dac_56","Dac_67","Dac_78"]
 
-mdsData = pd.DataFrame(columns=MDS_colnames)
+
 vehicleIDList = GPSData_initial.drop_duplicates(['vehicleID'])['vehicleID']    #提取车辆ID
+vehicleIDList = vehicleIDList[0:200]
+mdsData = pd.DataFrame(index=np.arange(0,len(vehicleIDList)),columns=MDS_colnames)
+
 
 #生成驾驶人特征数据框，行为驾驶人ID，列为特征项
 quant = 0.85 #日常特征，取85位
@@ -223,31 +226,12 @@ for i in range(len(vehicleIDList)):
         if Stdlen>8 :
             Stdlen = 8
         if Stdlen>2:    
-            temp = pd.DataFrame(columns=MDS_colnames)
-            temp.loc[0]["Acc_23","Acc_34","Acc_45","Acc_56","Acc_67","Acc_78"]= \
-            abnormalStandard['ay_abnormalAAC'].iloc[3:Stdlen]
-            temp[01,c(8:(Stdlen +5))] = abnormalStandard$ay_abnormalDAC[c(3:Stdlen)]
-            temp['ID'] = IDn
-            mdsData = rbind(mdsData,temp)
+            temp = [IDn]
+            temp.extend(abnormalStandard.T.iloc[0,:][2:8].tolist())
+            temp.extend(abnormalStandard.T.iloc[2,:][2:8].tolist())
+            mdsData.values[i]=temp
+           
+    print(i)
     
-  
-    
-  print(i)
-  print(length(subset(GPSData,GPS_Speed > 0)$GPS_Speed))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#需要考虑stdlen<8 时候的处理
 

@@ -2,7 +2,8 @@
 """
 Created on Tue Jul 25 16:14:31 2017
 本程序用于利用两客一危数据分析异常驾驶行为（主要是加减速）特征
-绘制风险地图
+多维标度分析
+聚类分析
 @author: Zhwh-notbook
 """
 import math
@@ -208,16 +209,17 @@ import matplotlib.pyplot as plt
 MDS_colnames = ["ID","Acc_23","Acc_34","Acc_45","Acc_56","Acc_67","Acc_78",
                    "Dac_23","Dac_34","Dac_45","Dac_56","Dac_67","Dac_78"]
 
-
+testNum = 200
 vehicleIDList = GPSData_initial.drop_duplicates(['vehicleID'])['vehicleID']    #提取车辆ID
-vehicleIDList = vehicleIDList[0:200]
+vehicleIDList = vehicleIDList[0:testNum]
 mdsData = pd.DataFrame(index=np.arange(0,len(vehicleIDList)),columns=MDS_colnames)
 
 
 #生成驾驶人特征数据框，行为驾驶人ID，列为特征项
 quant = 0.85 #日常特征，取85位
 for i in range(len(vehicleIDList)):
-    IDn = vehicleIDList[i]
+    print(i)
+    IDn = vehicleIDList.iloc[i]
     GPSData = GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn].copy()
     if len(GPSData.loc[GPSData["GPS_Speed"] > 0]) > vehicleNum : #数据过少的不纳入计算
         GPSData = vehicleDataINI(GPSData)
@@ -227,11 +229,38 @@ for i in range(len(vehicleIDList)):
             Stdlen = 8
         if Stdlen>2:    
             temp = [IDn]
-            temp.extend(abnormalStandard.T.iloc[0,:][2:8].tolist())
-            temp.extend(abnormalStandard.T.iloc[2,:][2:8].tolist())
-            mdsData.values[i]=temp
-           
-    print(i)
-    
-#需要考虑stdlen<8 时候的处理
+            temp.extend(abnormalStandard.T.iloc[0,:][2:Stdlen].tolist())
+            for k in range(8-Stdlen): 
+                temp.append('nan')
+            temp.extend(abnormalStandard.T.iloc[2,:][2:Stdlen].tolist())
+            for k in range(8-Stdlen):
+                temp.append('nan')
+            mdsData.iloc[i]=temp
+
+mdsData = mdsData.loc[pd.isnull(mdsData["ID"]) == False] #剔除ID为‘nan’的数据
+'''
+利用df.interpolate方法填充缺失值
+'''
+mdsfillnan = mdsData[["Dac_23","Dac_34","Dac_45","Dac_56","Dac_67","Dac_78"]]
+
+#mdsfillnan = mdsData[["Acc_23","Acc_34","Acc_45","Acc_56","Acc_67","Acc_78",
+#                   "Dac_23","Dac_34","Dac_45","Dac_56","Dac_67","Dac_78"]]
+
+mdsfillnan = mdsfillnan.apply(lambda x: pd.to_numeric(x, errors='coerce'))
+#a = a.interpolate(method='spline', order=2)    
+mdsfillnan = mdsfillnan.interpolate(method='values', axis=0,
+                                    limit=testNum, limit_direction='both')   
+'''
+sklearn
+'''
+mds = MDS()
+mds.fit(mdsfillnan)
+mdsResult = mds.embedding_
+plt.scatter(mdsResult[0:128,0],mdsResult[0:128,1],color='turquoise')
+
+# =============================================================================
+# 利用Kmeans聚类，筛选高危异常驾驶行为驾驶人
+# =============================================================================
+
+
 

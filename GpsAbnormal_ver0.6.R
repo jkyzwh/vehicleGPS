@@ -74,7 +74,7 @@ for (i in 1:length(vehicleIDList))
   }
   print(i)
   print(length(subset(GPSData,GPS_Speed > 0)$GPS_Speed))
-  if(i>100){break()}
+  if(i>1000){break()}
 }
 
 #####################################################################
@@ -249,7 +249,7 @@ ggplot(data.frame(x,y,z),aes(x,y))+
 IDdist = data.frame(x,y)
 
 #利用均值聚类，区分不同类别驾驶员
-model2=kmeans(IDdist,centers=4,nstart=10)
+model2=kmeans(IDdist,centers=3,nstart=10)
 IDdist$ID = mdsID
 IDdist$IDkmean = model2$cluster
 

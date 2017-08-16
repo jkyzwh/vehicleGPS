@@ -158,7 +158,7 @@ def vehicleDataINI(GPSData):
 #==============================================================================
 # 导入原始数据，对原始数据的列进行标准化命名
 #==============================================================================
-dataName = '/home/zhwh/Data/sichuan-xcar-2016080810.csv'
+dataName = 'D:\\PROdata\\Data\\dangerous good transport\\sichuan-xcar-2016080810.csv'
 colname = ["vehicleID","longitude","latitude",\
            "GPS_Speed","direction","elevation",\
            "GpsTime"]
@@ -201,6 +201,8 @@ for i in range(len(ID.index)):
 #==============================================================================
 from sklearn.manifold import MDS
 import matplotlib.pyplot as plt
+plt.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
+plt.rcParams['axes.unicode_minus']=False #用来正常显示负号
 
 '''
 构造一个空数据框，共13列，行数量为驾驶人数量，列名为MDS_colnames
@@ -209,7 +211,7 @@ import matplotlib.pyplot as plt
 MDS_colnames = ["ID","Acc_23","Acc_34","Acc_45","Acc_56","Acc_67","Acc_78",
                    "Dac_23","Dac_34","Dac_45","Dac_56","Dac_67","Dac_78"]
 
-testNum = 1000
+testNum = 200
 vehicleIDList = GPSData_initial.drop_duplicates(['vehicleID'])['vehicleID']    #提取车辆ID
 vehicleIDList = vehicleIDList[0:testNum]
 mdsData = pd.DataFrame(index=np.arange(0,len(vehicleIDList)),columns=MDS_colnames)
@@ -294,6 +296,19 @@ mds = MDS()
 mds.fit(mdsfillnan)
 mdsResult = mds.embedding_
 plt.scatter(mdsResult[0:378,0],mdsResult[0:378,1],color='turquoise')
+
+# =============================================================================
+# 测试matplotlib绘图
+# =============================================================================
+labels='frogs','hogs','dogs','logs'
+sizes=15,20,45,10
+colors='yellowgreen','gold','lightskyblue','lightcoral'
+explode=0,0.1,0,0
+plt.pie(sizes,explode=explode,labels=labels,colors=colors,autopct='%1.1f%%',shadow=True,startangle=50)
+plt.axis('equal')
+plt.show()
+
+plt.plot([1, 2, 3, 4], [1, 4, 9, 16])
 
 # =============================================================================
 # 利用Kmeans聚类，筛选高危异常驾驶行为驾驶人

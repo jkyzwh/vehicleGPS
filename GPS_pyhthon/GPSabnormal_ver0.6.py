@@ -301,14 +301,18 @@ import matplotlib.pyplot as plt
 plt.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
 plt.rcParams['axes.unicode_minus']=False #用来正常显示负号
 
-plt.hist(mdsData['Acc_23'], bins=6)
+#plt.hist(mdsData['Acc_23'], bins=6)
+plt.scatter(mdsResult['x'],mdsResult['y'],color='turquoise')
 plt.scatter(mdsResult['x'],mdsResult['y'],color='turquoise')
 
 import seaborn as sns
 sns.set_style('darkgrid')
 
-sns.scatter(data=mdsResult)
+sns.jointplot(x=mdsResult['x'],y=mdsResult['y'],kind='kde') #核密度估计
+sns.stripplot(x='x',y='y',data=mdsResult) #绘制散点图
+sns.regplot(x='x',y='y',data=mdsResult)
 
+sns.stripplot(x="latitude",y="longitude",data=GPSData_ab) #绘制路由图
 
 
 

@@ -200,9 +200,6 @@ for i in range(len(ID.index)):
 # 利用MDS方法判断异常驾驶员
 #==============================================================================
 from sklearn.manifold import MDS
-import matplotlib.pyplot as plt
-plt.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
-plt.rcParams['axes.unicode_minus']=False #用来正常显示负号
 
 '''
 构造一个空数据框，共13列，行数量为驾驶人数量，列名为MDS_colnames
@@ -295,7 +292,25 @@ sklearn
 mds = MDS()
 mds.fit(mdsfillnan)
 mdsResult = mds.embedding_
-plt.scatter(mdsResult[0:378,0],mdsResult[0:378,1],color='turquoise')
+mdsResult = pd.DataFrame(mdsResult)
+mdsResult['ID'] = mdsData['ID'].values
+mdsResult = mdsResult.rename(columns={0:'x',1:'y'})
+mdsLen = len(mdsResult['ID'])
+
+import matplotlib.pyplot as plt
+plt.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
+plt.rcParams['axes.unicode_minus']=False #用来正常显示负号
+
+plt.hist(mdsData['Acc_23'], bins=6)
+plt.scatter(mdsResult['x'],mdsResult['y'],color='turquoise')
+
+import seaborn as sns
+sns.set_style('darkgrid')
+
+sns.scatter(data=mdsResult)
+
+
+
 
 # =============================================================================
 # 测试matplotlib绘图

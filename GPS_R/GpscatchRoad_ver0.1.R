@@ -49,12 +49,11 @@ for (i in 1:length(vehicleIDList))
 #抓取高德地图的道路坐标信息
 #http://restapi.amap.com/v3/autograsp?carid=abcd123456&locations=116.496167,39.917066|116.496149,39.917205|116.496149,39.917326&time=1434077500,1434077501,1434077510&direction=1,1,2&speed=1,1,2&output=xml&key=0db8f3c425720344c18169820cc77d1a
 #####################################################################
+driverNum= map_ab[!duplicated(map_ab$vehicleID),]$vehicleID
 begin = "http://restapi.amap.com/v3/autograsp?"
 carid = paste("carid=",'7d1a',as.character(driverNum[1]),sep = "")
 output = "&output=json"
 key = "&key=0db8f3c425720344c18169820cc77d1a"
-
-driverNum= map_ab[!duplicated(map_ab$vehicleID),]$vehicleID
 
 map_ab = subset(map_ab,vehicleID == driverNum[2] )
 

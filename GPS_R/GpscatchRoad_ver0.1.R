@@ -29,7 +29,7 @@ GPSData_initial = fread(dataName,header=T,sep=",",stringsAsFactors=FALSE,data.ta
 vehicleIDList = GPSData_initial[!duplicated(GPSData_initial$vehicleID),]$vehicleID
 vehicleNum = 100  #vehicleNum是有效ID数据中速度大于零的最小数量
 
-map_ab = data.frame()
+map_ab = data.frame() 
 for (i in 1:length(vehicleIDList))
 {
   ID = vehicleIDList[i]
@@ -47,30 +47,34 @@ for (i in 1:length(vehicleIDList))
 
 ######################################################################
 #抓取高德地图的道路坐标信息
+#http://restapi.amap.com/v3/autograsp?carid=abcd123456&locations=116.496167,39.917066|116.496149,39.917205|116.496149,39.917326&time=1434077500,1434077501,1434077510&direction=1,1,2&speed=1,1,2&output=xml&key=0db8f3c425720344c18169820cc77d1a
 #####################################################################
 begin = "http://restapi.amap.com/v3/autograsp?"
-carid = paste("carid=",'7d1a',as.character(GPSData$vehicleID[1]),sep = "")
+carid = paste("carid=",'7d1a',as.character(driverNum[1]),sep = "")
 output = "&output=json"
 key = "&key=0db8f3c425720344c18169820cc77d1a"
 
+driverNum= map_ab[!duplicated(map_ab$vehicleID),]$vehicleID
 
-vehicleID = GPSData$vehicleID[1]
+map_ab = subset(map_ab,vehicleID == driverNum[2] )
 
-for(i in 1:(length(GPSData$vehicleID)-2))
+vehicleID = driverNum[2]
+
+for(i in 1:(length(map_ab$vehicleID)-2))
 {
-  time1 = GPSData$GpsTime_UTC[i];time2 = GPSData$GpsTime_UTC[i+1];time3 = GPSData$GpsTime_UTC[i+2]
+  time1 = map_ab$GpsTime_UTC[i];time2 = map_ab$GpsTime_UTC[i+1];time3 = map_ab$GpsTime_UTC[i+2]
   time = paste(time1,time2,time3,sep = ',')
   time = paste("&time=",time,sep = '')
-  drc1 = GPSData$direction[i];drc2 = GPSData$direction[i+1];drc3 = GPSData$direction[i+2];
+  drc1 = map_ab$direction[i];drc2 = map_ab$direction[i+1];drc3 = map_ab$direction[i+2];
   direction = paste(drc1,drc2,drc3,sep = ',')
   direction = paste("&direction=",direction,sep = '')
   
-  speed1 = GPSData$GPS_Speed[i];speed2 = GPSData$GPS_Speed[i+1];speed3 = GPSData$GPS_Speed[i+1];
+  speed1 = map_ab$GPS_Speed[i];speed2 = map_ab$GPS_Speed[i+1];speed3 = map_ab$GPS_Speed[i+1];
   speed = paste(speed1,speed2,speed3,sep = ',')
   speed = paste("&speed=",speed,sep = '')
   
-  lat1 = GPSData$latitude[i];lat2 = GPSData$latitude[i+1];lat3 = GPSData$latitude[i+2];
-  long1 = GPSData$longitude[i];long2 = GPSData$longitude[i+1];long3 = GPSData$longitude[i+1];
+  lat1 = map_ab$latitude[i];lat2 = map_ab$latitude[i+1];lat3 = map_ab$latitude[i+2];
+  long1 = map_ab$longitude[i];long2 = map_ab$longitude[i+1];long3 = map_ab$longitude[i+1];
   location1 = paste(long1,lat1,sep = ',')
   location2 = paste(long2,lat2,sep = ',')
   location3 = paste(long3,lat3,sep = ',')
@@ -142,14 +146,6 @@ amap  =  fromJSON(connect)
 
 ############################################################
 
-
-
-
-
-
-
-
-
 begin = "http://restapi.amap.com/v3/autograsp?"
 carid = "carid=3cf7807acf6ac09f"
 location = "&locations=104.0613,29.63833|104.0610,29.63632|104.0613,29.63650"
@@ -187,7 +183,7 @@ Amap_getRoad  =  function(url)
   return(amap)
 }
 
-a1 = Amap_getRoad(url1)
+a1 = Amap_getRoad(url)
 json_data_frame  =  as.data.frame(a)
 
 print(a)
@@ -204,16 +200,23 @@ map = amap(map)  #使用高德地图
 map = addCircleMarkers(map,lng=~longitude,lat=~latitude,radius = ~8, color = ~col , fillOpacity = 0.5)
 print(map)
 
+##################################################################
+#利用百度地图抓取轨迹-----------------
+####################################################################
+ak = '?ak=kvfrFNTcOQWVFUmhwqZhYzxxVj088NuW'
+# 百度地图鹰眼服务的service_id：149198
+service_id = '&service_id=149198'
+entity_name = '&entity_name=GPScatch'
+entityAdd = 'http://yingyan.baidu.com/api/v3/entity/add'
+entityAdd =paste(entityAdd,ak,service_id,entity_name,sep = "")
+
+connect  =  getURL(entityAdd,.encoding="utf-8")
 
 
+entityDel = "http://yingyan.baidu.com/api/v3/entity/delete"
+entityDel =paste(entityDel,ak,service_id,entity_name,sep = "")
 
-
-
-
-
-
-
-
+connect  =  getURL(entityDel,.encoding="utf-8")
 
 
 

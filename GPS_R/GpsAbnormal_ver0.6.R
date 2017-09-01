@@ -37,7 +37,7 @@ library(mice) #前三个包是mice的基础
 
 #调用函数
 
-source("D:/PROdata/vehicle GPS/GPS/GPS_function_ver0.4.R")
+source("D:/GitHub/vehicleGPS/GPS_R/GPS_function_ver0.4.R")
 setwd("D:/PROdata/vehicle GPS/GPS")
 # 导入初始化数据
 dataName = 'D:/PROdata/Data/dangerous good transport/sichuan-xcar-2016080810.csv'

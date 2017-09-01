@@ -68,7 +68,7 @@ def fun_abnormalACC(GPSData,probs=0.95):
 def fun_abnormalDirection (data,probs=0.95):
     angleChange = GPSData.loc[GPSData['angleChangeRate']>0 ][['speed_split','angleChangeRate']]
     angleChange['split'] = angleChange['speed_split']
-    a = angleChange.groupby('speed_split').quantile(q=0.95, axis=0, numeric_only=True, interpolation='linear')
+    a = angleChange.groupby('speed_split').quantile(q=probs, axis=0, numeric_only=True, interpolation='linear')
     a = a.sort_values(by=['split'],ascending=True)
     a = a.rename(columns={'split':'speed_split','angleChangeRate':'angleChange_abnormal'})
     return(a)
@@ -180,8 +180,9 @@ map_ab = pd.DataFrame()
 for i in range(len(ID.index)):
     IDn = ID.iloc[i]
     GPSData = GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn].copy()
-    if len(GPSData.loc[GPSData["GPS_Speed"] > 0]) > vehicleNum :
-        GPSData = vehicleDataINI(GPSData)
+    GPSData = vehicleDataINI(GPSData)
+    if len(GPSData.loc[GPSData['spacing'] > 0]) > vehicleNum  and \
+    len(GPSData.loc[GPSData["GPS_Speed"] > 0]) > vehicleNum:        
         GPSData_ab = funAbnormalData(GPSData,0.95)
         GPSData_ab['vehicleID'] = IDn
         Pointcol = col[i]
@@ -193,7 +194,7 @@ for i in range(len(ID.index)):
             map_ab = pd.concat([map_ab,GPSData_ab],ignore_index=True)
             
     print(i)
-    if i>20:
+    if i>50:
         break
        
 #==============================================================================

@@ -161,21 +161,37 @@ def vehicleDataINI(GPSData):
 def vehicleinfo(GPSData_initial):
     GPSData_initial.GpsTime = pd.to_datetime(GPSData_initial.GpsTime)
     ID = GPSData_initial.drop_duplicates(['vehicleID'])['vehicleID']
-    colnames = ["ID","speed_min","speed_max","unzerospeedNum","distance","begintime","endtime",
-                "timeAll","drivingtime","roadNum"]
-    vehicle_infomation = pd.DataFrame(index=np.arange(0,len(ID)),columns=colnames)
+    colnames = ["ID","speed_min","speed_max","unzerospeedNum","begintime","endtime",
+                "timeAll","drivingtime","roadNum","distance"]
+    vehicle_information = pd.DataFrame(index=np.arange(0,len(ID)),columns=colnames)
     for i in range(len(ID.index)):
+        print("i=",i)
         IDn = ID.iloc[i]
         GPSData = GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn].copy()
         GPSData = vehicleDataINI(GPSData)
-        vehicle_infomation['vehicleID'].values[i] = IDn
+        vehicle_information['ID'].values[i] = IDn
+        vehicle_information["begintime"].values[i] = GPSData.GpsTime.iloc[0]
+        vehicle_information["endtime"].values[i] = GPSData.GpsTime.iloc[len(GPSData)-1]
+        vehicle_information["distance"].values[i] = sum(GPSData['spacing'])
+        
         a = GPSData.loc[GPSData['GPS_Speed'] > 0].copy()
-        vehicle_infomation['speed_min'].values[i] = min(a['GPS_Speed'])
-        vehicle_infomation['speed_max'].values[i] = max(a['GPS_Speed'])
-        vehicle_infomation['unzerospeedNum'].values[i] = len(a['GPS_Speed'])
-    
-    
-    
+        if len(a) == 0:
+            vehicle_information['speed_min'].values[i] = 0
+            vehicle_information['speed_max'].values[i] = 0
+            vehicle_information['unzerospeedNum'].values[i] = 0
+            vehicle_information["drivingtime"].values[i] = 0
+            vehicle_information["roadNum"].values[i] = 0
+                        
+        if len(a) > 0:
+            vehicle_information['speed_min'].values[i] = min(a['GPS_Speed'])
+            vehicle_information['speed_max'].values[i] = max(a['GPS_Speed'])
+            vehicle_information['unzerospeedNum'].values[i] = len(a['GPS_Speed'])
+            vehicle_information["drivingtime"].values[i] = sum(a['Time_diff'])
+             
+        #if i>100:
+         #   break
+    vehicle_information["timeAll"] = (vehicle_information["endtime"]-vehicle_information["begintime"])/np.timedelta64(1, 's')
+    return(vehicle_information)
     
 
     

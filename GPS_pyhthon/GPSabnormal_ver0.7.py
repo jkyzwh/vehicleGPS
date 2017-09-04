@@ -154,7 +154,47 @@ def vehicleDataINI(GPSData):
      GPSData['angleChangeRate'] = abs(GPSData['direction_diff']/GPSData['spacing'])     
      GPSData['speed_split'] = round(GPSData.GPS_Speed/10)      
      return(GPSData)
-     
+ 
+# =============================================================================
+# 对不同车辆的基本特征进行整理
+# =============================================================================
+def vehicleinfo(GPSData_initial):
+    GPSData_initial.GpsTime = pd.to_datetime(GPSData_initial.GpsTime)
+    ID = GPSData_initial.drop_duplicates(['vehicleID'])['vehicleID']
+    colnames = ["ID","speed_min","speed_max","unzerospeedNum","begintime","endtime",
+                "timeAll","drivingtime","roadNum","distance"]
+    vehicle_information = pd.DataFrame(index=np.arange(0,len(ID)),columns=colnames)
+    for i in range(len(ID.index)):
+        print("i=",i)
+        IDn = ID.iloc[i]
+        GPSData = GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn].copy()
+        GPSData = vehicleDataINI(GPSData)
+        vehicle_information['ID'].values[i] = IDn
+        vehicle_information["begintime"].values[i] = GPSData.GpsTime.iloc[0]
+        vehicle_information["endtime"].values[i] = GPSData.GpsTime.iloc[len(GPSData)-1]
+        vehicle_information["distance"].values[i] = sum(GPSData['spacing'])
+        
+        a = GPSData.loc[GPSData['GPS_Speed'] > 0].copy()
+        if len(a) == 0:
+            vehicle_information['speed_min'].values[i] = 0
+            vehicle_information['speed_max'].values[i] = 0
+            vehicle_information['unzerospeedNum'].values[i] = 0
+            vehicle_information["drivingtime"].values[i] = 0
+            vehicle_information["roadNum"].values[i] = 0
+                        
+        if len(a) > 0:
+            vehicle_information['speed_min'].values[i] = min(a['GPS_Speed'])
+            vehicle_information['speed_max'].values[i] = max(a['GPS_Speed'])
+            vehicle_information['unzerospeedNum'].values[i] = len(a['GPS_Speed'])
+            vehicle_information["drivingtime"].values[i] = sum(a['Time_diff'])
+             
+        #if i>100:
+         #   break
+    vehicle_information["timeAll"] = (vehicle_information["endtime"]-vehicle_information["begintime"])/np.timedelta64(1, 's')
+    return(vehicle_information)
+    
+
+    
 #==============================================================================
 # 导入原始数据，对原始数据的列进行标准化命名
 #==============================================================================

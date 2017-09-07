@@ -92,12 +92,12 @@ def funAbnormalData(GPSData,probs = 0.95):
     GPSData = pd.merge(GPSData,SDdirection,on="speed_split",how='outer')
     
     for i in range(len(GPSData.index)):
-        if GPSData.Acc.iloc[i] > 0 and GPSData.Acc.iloc[i] > GPSData.ay_abnormalAAC.iloc[i]:
-            GPSData.ACCabnormal.values[i] = "ay_AAC"
-        if GPSData.Acc.iloc[i] < 0 and GPSData.Acc.iloc[i] < GPSData.ay_abnormalDAC.iloc[i]:
-            GPSData.ACCabnormal.values[i] = "ay_DAC"
-        if GPSData.angleChangeRate.iloc[i] > 0 and GPSData.angleChangeRate.iloc[i] < GPSData.angleChange_abnormal.iloc[i]:
-            GPSData.angleabnormal.values[i] = "angle_directionRate"    
+        if GPSData['Acc'].iloc[i] > 0 and GPSData['Acc'].iloc[i] > GPSData['ay_abnormalAAC'].iloc[i]:
+            GPSData['ACCabnormal'].values[i] = "ay_AAC"
+        if GPSData['Acc'].iloc[i] < 0 and GPSData['Acc'].iloc[i] < GPSData['ay_abnormalDAC'].iloc[i]:
+            GPSData['ACCabnormal'].values[i] = "ay_DAC"
+        if GPSData['angleChangeRate'].iloc[i] > 0 and GPSData['angleChangeRate'].iloc[i] < GPSData['angleChange_abnormal'].iloc[i]:
+            GPSData['angleabnormal'].values[i] = "angle_directionRate"    
             
     GPSData_ab = GPSData.loc[(GPSData['ACCabnormal'] != "normal") |
                              (GPSData['angleabnormal'] != "normal")].copy()
@@ -109,7 +109,7 @@ def funAbnormalData(GPSData,probs = 0.95):
             Lat_A = GPSData_ab.latitude.iloc[i-1]
             Lng_B = GPSData_ab.longitude.iloc[i]
             Lat_B = GPSData_ab.latitude.iloc[i]
-            GPSData_ab.spacing.values[i] = calcDistance(Lat_A, Lng_A, Lat_B, Lng_B)*1000 #计算相邻点之间的距离
+            GPSData_ab['spacing'].values[i] = calcDistance(Lat_A, Lng_A, Lat_B, Lng_B)*1000 #计算相邻点之间的距离
     return(GPSData_ab)
 #==============================================================================
 # 定义函数，将每个ID的数据整理为可以进行异常行为识别的数据
@@ -130,9 +130,9 @@ def vehicleDataINI(GPSData):
      Pandas计算出的时间间隔数据的类型是np.timedelta64, 不是Python标准库中的timedelta类型，
      因此没有total_seconds()函数，需要除以np.timedelta64的1秒来计算间隔了多少秒。
      '''
-     GPSData['Time_diff'] = GPSData.GpsTime.diff().map(lambda x: x/np.timedelta64(1, 's'))
-     GPSData['Speed_diff'] = GPSData.GPS_Speed.diff()        #速度差值
-     GPSData['direction_diff'] = GPSData.direction.diff()        #方位角变化
+     GPSData['Time_diff'] = GPSData['GpsTime'].diff().map(lambda x: x/np.timedelta64(1,'s'))
+     GPSData['Speed_diff'] = GPSData['GPS_Speed'].diff()        #速度差值
+     GPSData['direction_diff'] = GPSData['direction'].diff()        #方位角变化
      GPSData['Acc'] = GPSData['Speed_diff']/GPSData['Time_diff']     #加速度计算
      '''
      调用函数，计算相邻点之间的距离
@@ -140,24 +140,24 @@ def vehicleDataINI(GPSData):
      GPSData['spacing'] = 0
      for i in range(len(GPSData.index)):
          if i==0:
-             GPSData.spacing.values[i] = 0
+             GPSData['spacing'].values[i] = 0
          else:
              k = i-1
-             Lat_A = GPSData.latitude.iloc[k]
-             Lng_A = GPSData.longitude.iloc[k]
-             Lat_B = GPSData.latitude.iloc[i]
-             Lng_B = GPSData.longitude.iloc[i]
-             GPSData.spacing.values[i] = calcDistance(Lat_A, Lng_A, Lat_B, Lng_B)*1000
+             Lat_A = GPSData['latitude'].iloc[k]
+             Lng_A = GPSData['longitude'].iloc[k]
+             Lat_B = GPSData['latitude'].iloc[i]
+             Lng_B = GPSData['longitude'].iloc[i]
+             GPSData['spacing'].values[i] = calcDistance(Lat_A, Lng_A, Lat_B, Lng_B)*1000
      
      GPSData['angleChangeRate'] = abs(GPSData['direction_diff']/GPSData['spacing'])     
-     GPSData['speed_split'] = round(GPSData.GPS_Speed/10)      
+     GPSData['speed_split'] = round(GPSData['GPS_Speed']/10)      
      return(GPSData)
  
 # =============================================================================
 # 对不同车辆的基本特征进行整理
 # =============================================================================
 def vehicleinfo(GPSData_initial):
-    GPSData_initial.GpsTime = pd.to_datetime(GPSData_initial.GpsTime)
+    GPSData_initial['GpsTime'] = pd.to_datetime(GPSData_initial['GpsTime'])
     ID = GPSData_initial.drop_duplicates(['vehicleID'])['vehicleID']
     colnames = ["ID","speed_min","speed_max","unzerospeedNum","begintime","endtime",
                 "timeAll","drivingtime","roadNum","distance"]
@@ -168,8 +168,8 @@ def vehicleinfo(GPSData_initial):
         GPSData = GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn].copy()
         GPSData = vehicleDataINI(GPSData)
         vehicle_information['ID'].values[i] = IDn
-        vehicle_information["begintime"].values[i] = GPSData.GpsTime.iloc[0]
-        vehicle_information["endtime"].values[i] = GPSData.GpsTime.iloc[len(GPSData)-1]
+        vehicle_information["begintime"].values[i] = GPSData['GpsTime'].iloc[0]
+        vehicle_information["endtime"].values[i] = GPSData['GpsTime'].iloc[len(GPSData)-1]
         vehicle_information["distance"].values[i] = sum(GPSData['spacing'])
         
         a = GPSData.loc[GPSData['GPS_Speed'] > 0].copy()
@@ -186,8 +186,52 @@ def vehicleinfo(GPSData_initial):
             vehicle_information['unzerospeedNum'].values[i] = len(a['GPS_Speed'])
             vehicle_information["drivingtime"].values[i] = sum(a['Time_diff'])
              
-        #if i>100:
-         #   break
+        if i>19:
+            break
+    vehicle_information["timeAll"] = (vehicle_information["endtime"]-vehicle_information["begintime"])/np.timedelta64(1, 's')
+    return(vehicle_information)
+    
+# =============================================================================
+# 优化information函数，利用append，尝试提高运算速度
+# =============================================================================
+def vehicleinfo2(GPSData_initial):
+    GPSData_initial['GpsTime'] = pd.to_datetime(GPSData_initial['GpsTime'])
+    ID = GPSData_initial.drop_duplicates(['vehicleID'])['vehicleID']
+    colnames = ["ID","speed_min","speed_max","unzerospeedNum","begintime","endtime",
+                "timeAll","drivingtime","roadNum","distance"]
+    vehicle_information = pd.DataFrame(columns=colnames)
+    a=pd.Series()
+    for i in range(len(ID.index)):
+        print("i=",i)
+        IDn = ID.iloc[i]
+        GPSData = GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn].copy()
+        GPSData = vehicleDataINI(GPSData)
+        a['ID'] = IDn
+        a["begintime"] = str(GPSData['GpsTime'].iloc[0])
+        a["endtime"] = str(GPSData['GpsTime'].iloc[len(GPSData)-1])
+        a["distance"] = sum(GPSData['spacing'])
+        
+        b = GPSData.loc[GPSData['GPS_Speed'] > 0].copy()
+        if len(b) == 0:
+            a['speed_min'] = 0
+            a['speed_max'] = 0
+            a['unzerospeedNum'] = 0
+            a["drivingtime"] = 0
+            a["roadNum"] = 0
+            a["timeAll"] = 0
+                        
+        if len(b) > 0:
+            a['speed_min'] = min(b['GPS_Speed'])
+            a['speed_max'] = max(b['GPS_Speed'])
+            a['unzerospeedNum'] = len(b['GPS_Speed'])
+            a["drivingtime"] = sum(b['Time_diff'])
+            a["roadNum"] = 0
+            a["timeAll"] = 0
+        vehicle_information = vehicle_information.append(a,ignore_index=True)     
+        if i>19:
+            break
+    vehicle_information["begintime"] = pd.to_datetime(vehicle_information["begintime"])
+    vehicle_information["endtime"] = pd.to_datetime(vehicle_information["endtime"])
     vehicle_information["timeAll"] = (vehicle_information["endtime"]-vehicle_information["begintime"])/np.timedelta64(1, 's')
     return(vehicle_information)
     
@@ -201,15 +245,29 @@ colname = ["vehicleID","longitude","latitude",\
 print('读入两客一危数据')
 GPSData_initial = pd.read_csv(dataName,header=0) 
 GPSData_initial.columns = colname
+
+# =============================================================================
+# 对所有车辆的数据基本属性进行描述
+# =============================================================================
 '''
-将GPS时间转换为time类型
+记录函数运行时间，vehicleinfo()与vehicleinfo2()函数执行效率基本相当
 '''
-GPSData_initial.GpsTime = pd.to_datetime(GPSData_initial.GpsTime)
-vehicleNum = 50  #vehicleNum是有效ID数据中速度大于零的最小数量
+#import time
+#start = time.time()
+#vehicle_information =  vehicleinfo2(GPSData_initial)
+#end = time.time()
+#print (end-start)
+
+vehicle_information =  vehicleinfo(GPSData_initial)
 
 #==============================================================================
 # 构建循环，按照ID筛选异常行为
 #==============================================================================
+'''
+将GPS时间转换为time类型
+'''
+GPSData_initial['GpsTime'] = pd.to_datetime(GPSData_initial['GpsTime'])
+vehicleNum = 50  #vehicleNum是有效ID数据中速度大于零的最小数量
 ID = GPSData_initial.drop_duplicates(['vehicleID'])['vehicleID']    #提取车辆ID
 print('分析驾驶人异常驾驶行为，当前已经处理的数据数量为：')
 map_ab = pd.DataFrame()
@@ -218,14 +276,17 @@ for i in range(len(ID.index)):
     GPSData = GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn].copy()
     GPSData = vehicleDataINI(GPSData)
     if len(GPSData.loc[GPSData['spacing'] > 0]) > vehicleNum  and \
-    len(GPSData.loc[GPSData["GPS_Speed"] > 0]) > vehicleNum:        
+    len(GPSData.loc[GPSData["GPS_Speed"] > 0]) > vehicleNum: 
+        
         GPSData_ab = funAbnormalData(GPSData,0.95)
         GPSData_ab['vehicleID'] = IDn
         Pointcol = col[i]
-        if len(GPSData_ab.vehicleID)>0:
+        if len(GPSData_ab['vehicleID'])>0:
             GPSData_ab['col'] = Pointcol
+            
         if i == 1:
             map_ab = GPSData_ab
+            
         if i > 1:
             map_ab = pd.concat([map_ab,GPSData_ab],ignore_index=True)
             

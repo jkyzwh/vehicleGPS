@@ -105,10 +105,10 @@ def funAbnormalData(GPSData,probs = 0.95):
     GPSData_ab = GPSData_ab.sort_values(by=['GpsTime'],ascending=True)
     for i in range(len(GPSData_ab.index)):
         if i>1:
-            Lng_A = GPSData_ab.longitude.iloc[i-1]
-            Lat_A = GPSData_ab.latitude.iloc[i-1]
-            Lng_B = GPSData_ab.longitude.iloc[i]
-            Lat_B = GPSData_ab.latitude.iloc[i]
+            Lng_A = GPSData_ab['longitude'].iloc[i-1]
+            Lat_A = GPSData_ab['latitude'].iloc[i-1]
+            Lng_B = GPSData_ab['longitude'].iloc[i]
+            Lat_B = GPSData_ab['latitude'].iloc[i]
             GPSData_ab['spacing'].values[i] = calcDistance(Lat_A, Lng_A, Lat_B, Lng_B)*1000 #计算相邻点之间的距离
     return(GPSData_ab)
 #==============================================================================
@@ -285,7 +285,7 @@ for i in range(len(ID.index)):
             GPSData_ab['col'] = Pointcol
             
         if i == 1:
-            map_ab = GPSData_ab
+            map_ab = GPSData_ab.copy()
             
         if i > 1:
             map_ab = pd.concat([map_ab,GPSData_ab],ignore_index=True)

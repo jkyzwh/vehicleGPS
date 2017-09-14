@@ -39,7 +39,7 @@ def calcDistance(Lat_A, Lng_A, Lat_B, Lng_B):
 # =============================================================================
 def Numcoordinate(GPSData,L=100):
     colnames = ["sectionID","BPlongitude","BPlatitude","EPlongitude","EPlatitude","distance","pointNum"]
-    #Numpoints = pd.DataFrame(columns=colnames)
+    Numpoints = pd.DataFrame(columns=colnames)
     GPSData = GPSData.sort_values(by=['longitude','latitude'],ascending=True)
     GPSData['spacing'] = 0
     # 重新计算相邻点之间的距离

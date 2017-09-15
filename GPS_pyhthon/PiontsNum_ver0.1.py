@@ -76,9 +76,10 @@ def Numcoordinate(GPSData,L=100):
         #IDn = a['vehicleID'].iloc[i]
         if i == 0:
             for k in range(len(a.index)):
-                if a['distance'].iloc[k] > L:
+                if a['distance'].iloc[k] <= L:
                     a['sectionID'].values[k] = i
-                    nextpoint = k-1
+                if a['distance'].iloc[k] > L:
+                    nextpoint = k
                     break
         if i > nextpoint:
             #i = nextpoint
@@ -87,12 +88,20 @@ def Numcoordinate(GPSData,L=100):
             print('BP=',BP)
             print('nextpoint=',nextpoint)
             a['sectionID'].values[nextpoint] = i
-            for k in range(nextpoint,len(a.index)):
-                print("k=",k)
-                if a['distance'].iloc[k]-BP > L:
-                    a['sectionID'].values[k] = i
-                    nextpoint = k-1
-                    break
+            if i>= nextpoint:
+                for k in range(nextpoint,len(a.index)):
+                    print("k=",k)
+                    if a['distance'].iloc[k]-BP <= L :
+                        a['sectionID'].values[k] = i
+                        
+                    if a['distance'].iloc[k]-BP > L :
+                        if k > i:
+                            nextpoint = k
+                        if k < i:
+                            nextpoint = i
+                        break
+        if i == nextpoint:
+            break
             
             
             

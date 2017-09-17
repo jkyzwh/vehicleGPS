@@ -36,10 +36,11 @@ def calcDistance(Lat_A, Lng_A, Lat_B, Lng_B):
     distance = ra * (xx + dr)
     return (distance)
 # =============================================================================
-# 给定范围内的做表现的数量
+# 给定范围内的异常点的数量计算——方法一
 # =============================================================================
 def Numcoordinate(GPSData,L=100):
-    GPSData = GPSData.sort_values(by=['longitude','latitude'],ascending=True)
+    #GPSData = GPSData.sort_values(by=['longitude','latitude'],ascending=True)
+    GPSData = GPSData.sort_values(by=['GpsTime'],ascending=True)
     GPSData['spacing'] = 0
     # 重新计算相邻点之间的距离
     for i in range(len(GPSData.index)):
@@ -76,66 +77,69 @@ def Numcoordinate(GPSData,L=100):
         a = GPSData.loc[(GPSData['distance'] >= BP) & (GPSData['distance'] <= EP)].copy()
         num = len(a.index)-1
         Numpoints["sectionID"].values[i] = i
-        if num > 0:
+        
+        if len(a.index) == 0:
+            print('i=',i)
+            #Numpoints["BPlongitude"].values[i] = a['longitude'].iloc[0]
+            #Numpoints["BPlatitude"].values[i] = a['latitude'].iloc[0]
+            #Numpoints["EPlongitude"].values[i] = a['longitude'].iloc[num]
+            #Numpoints["EPlatitude"].values[i] = a['latitude'].iloc[num]
+            Numpoints["pointNum"].values[i] = 0
+            #Numpoints["distance"].values[i] = 0
+        
+        if len(a.index) > 0:
             print('i=',i)
             Numpoints["BPlongitude"].values[i] = a['longitude'].iloc[0]
             Numpoints["BPlatitude"].values[i] = a['latitude'].iloc[0]
             Numpoints["EPlongitude"].values[i] = a['longitude'].iloc[num]
             Numpoints["EPlatitude"].values[i] = a['latitude'].iloc[num]
-            Numpoints["pointNum"].values[i] = num
-            Numpoints["distance"].values[i] = sum(a['spacing'])
-            
+            Numpoints["pointNum"].values[i] = len(a.index)
+            #Numpoints["distance"].values[i] = sum(a['spacing'])
+    
+    Numpoints = Numpoints.loc[(Numpoints["pointNum"] != 0) ].copy()   
         
-    
-    
-    
-    
-    
-    
-    
-    
-    
-                 
-    a = GPSData.copy()
-    a['sectionID'] = 0
-    #b = pd.Series()
-    nextpoint = 0
-    for i in range(len(a.index)):
-        if i == 0:
-            for k in range(len(a.index)):
-                if a['distance'].iloc[k] <= L:
-                    a['sectionID'].values[k] = i+1
-                if a['distance'].iloc[k] > L:
-                    nextpoint = k
-                    break
-        if i > nextpoint:
-            #i = nextpoint
-            print("i=",i)
-            BP = a['distance'].iloc[nextpoint]
-            print('BP=',BP)
-            print('nextpoint=',nextpoint)
-            a['sectionID'].values[nextpoint] = i
-            if i>= nextpoint:
-                for k in range(nextpoint,len(a.index)):
-                    print("k=",k)
-                    if a['distance'].iloc[k]-BP <= L :
-                        a['sectionID'].values[k] = i+1
-                        
-                    if a['distance'].iloc[k]-BP > L :
-                        if k > i:
-                            nextpoint = k
-                        if k < i:
-                            nextpoint = i
-                        break
-        if i==12:
-            break
+    for i in range(len(Numpoints.index)):
+        #if i > 0:
+            #Numpoints["BPlongitude"].values[i] = Numpoints["EPlongitude"].iloc[i-1]
+            #Numpoints["BPlatitude"].values[i] = Numpoints["EPlatitude"].iloc[i-1]
+          
+        Lat_A = Numpoints["BPlatitude"].iloc[i]
+        Lng_A = Numpoints["BPlongitude"].iloc[i]
+        Lat_B = Numpoints["EPlatitude"].iloc[i]
+        Lng_B = Numpoints["EPlongitude"].iloc[i]
+        Numpoints["distance"].values[i] = calcDistance(Lat_A, Lng_A, Lat_B, Lng_B)*1000
+        
+    Numpoints["Num_per_m"] = Numpoints["pointNum"]/Numpoints["distance"]
+    return (Numpoints)
+        
+'''
+目前存在的问题是：
+1. 没有数据行的里程区间被直接加入后续里程编号，如200-300区间没有有效数据，则后续300-400区间被直接
+    扩充为200-400区间，降低了路段相对集中程度
+'''        
+
+# =============================================================================
+# 直接根据与相邻点的距离进行聚类，界定某点是否是独立异常点，然后确定每个独立异常点所属的路段编号            
+# =============================================================================
             
-            
-            
-                    
-            
-            
-            
-    
-    
-   
+def IndependentPoint(map_ab,L=100):
+    map_ab = map_ab.sort_values(by=['vehicleID','longitude','latitude'],ascending=True)
+    map_ab['spacing'] = 0
+    # 重新计算相邻点之间的距离
+    for i in range(len(map_ab.index)):
+         if i==0:
+             map_ab['spacing'].values[i] = 0
+         else:
+             k = i-1
+             Lat_A = map_ab['latitude'].iloc[k]
+             Lng_A = map_ab['longitude'].iloc[k]
+             Lat_B = map_ab['latitude'].iloc[i]
+             Lng_B = map_ab['longitude'].iloc[i]
+             map_ab['spacing'].values[i] = calcDistance(Lat_A, Lng_A, Lat_B, Lng_B)*1000
+             
+    from sklearn.cluster import KMeans
+    import matplotlib.pyplot as plt 
+    X = map_ab['spacing']
+    y_pred = KMeans(n_clusters=2).fit(X)
+    plt.scatter(X[:, 0], X[:, 1], c=y_pred)
+    plt.show()

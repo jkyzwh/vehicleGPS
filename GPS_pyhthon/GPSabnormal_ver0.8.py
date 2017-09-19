@@ -286,14 +286,16 @@ for i in range(len(ID.index)):
             
         if i == 1:
             map_ab = GPSData_ab.copy()
+            #map_ab = IndependentPoint(map_ab,L=300,Nclusters=2)
             
         if i > 1:
             map_ab = pd.concat([map_ab,GPSData_ab],ignore_index=True)
+            #map_ab = IndependentPoint(map_ab,L=300,Nclusters=2)
             
     print(i)
     if i>50:
         break
-       
+map_ab = IndependentPoint(map_ab,L=300,Nclusters=2)
 #==============================================================================
 # 利用MDS方法判断异常驾驶员
 #==============================================================================

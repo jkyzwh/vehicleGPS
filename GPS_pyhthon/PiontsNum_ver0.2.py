@@ -36,7 +36,10 @@ def calcDistance(Lat_A, Lng_A, Lat_B, Lng_B):
     distance = ra * (xx + dr)
     return (distance)
 # =============================================================================
-# 给定范围内的异常点的数量计算——方法一
+# 给定范围内的异常点的数量计算:
+'''
+1. 计算输入数据框中相对固定里程道路区间内的坐标点数量
+'''
 # =============================================================================
 def Numcoordinate(GPSData,L=100):
     #GPSData = GPSData.sort_values(by=['longitude','latitude'],ascending=True)
@@ -119,27 +122,61 @@ def Numcoordinate(GPSData,L=100):
 '''        
 
 # =============================================================================
-# 直接根据与相邻点的距离进行聚类，界定某点是否是独立异常点，然后确定每个独立异常点所属的路段编号            
+# 直接根据与相邻点的距离进行聚类
+'''
+计算输入数据框每行数据与前后数据行的距离
+根据距离对某行坐标是否为独立事件点进行聚类分析
+聚类结果标识在cluster数据列
+函数中：
+L：分段的长度，间距大于该分段长度的为独立点
+Nclusters： 聚类预设的分类数量
+'''          
 # =============================================================================
             
-def IndependentPoint(map_ab,L=100):
-    map_ab = map_ab.sort_values(by=['vehicleID','longitude','latitude'],ascending=True)
-    map_ab['spacing'] = 0
-    # 重新计算相邻点之间的距离
+def IndependentPoint(map_ab,L=300,Nclusters=2):
+    map_ab = map_ab.sort_values(by=['vehicleID','GpsTime'],ascending=True)
+    map_ab['spacing_front'] = 0    # 重新计算相邻点之间的距离
     for i in range(len(map_ab.index)):
          if i==0:
-             map_ab['spacing'].values[i] = 0
+             map_ab['spacing_front'].values[i] = 0
          else:
              k = i-1
              Lat_A = map_ab['latitude'].iloc[k]
              Lng_A = map_ab['longitude'].iloc[k]
              Lat_B = map_ab['latitude'].iloc[i]
              Lng_B = map_ab['longitude'].iloc[i]
-             map_ab['spacing'].values[i] = calcDistance(Lat_A, Lng_A, Lat_B, Lng_B)*1000
+             map_ab['spacing_front'].values[i] = calcDistance(Lat_A, Lng_A, Lat_B, Lng_B)*1000
              
+    map_ab['spacing_behind'] = 0    # 重新计算相邻点之间的距离
+    for i in range(len(map_ab.index)):
+         if i==(len(map_ab.index)-1):
+             map_ab['spacing_behind'].values[i] = 0
+         else:
+             k = i+1
+             Lat_A = map_ab['latitude'].iloc[k]
+             Lng_A = map_ab['longitude'].iloc[k]
+             Lat_B = map_ab['latitude'].iloc[i]
+             Lng_B = map_ab['longitude'].iloc[i]
+             map_ab['spacing_behind'].values[i] = calcDistance(Lat_A, Lng_A, Lat_B, Lng_B)*1000
+    
+    
     from sklearn.cluster import KMeans
-    import matplotlib.pyplot as plt 
-    X = map_ab['spacing']
-    y_pred = KMeans(n_clusters=2).fit(X)
-    plt.scatter(X[:, 0], X[:, 1], c=y_pred)
-    plt.show()
+    #import matplotlib.pyplot as plt 
+    #X = 1.0*(map_ab['spacing']-map_ab['spacing'].mean())/map_ab['spacing'].std()
+    a = map_ab.loc[(map_ab['spacing_front'] > L) & (map_ab['spacing_behind'] > L)].copy()
+    map_ab = map_ab.loc[(map_ab['spacing_front'] <= L) & (map_ab['spacing_behind'] <= L)]
+    X = map_ab[['spacing_front','spacing_behind']]
+    
+    #X = [[i] for i in X]
+    #X = np.array(X).tolist()
+    #Nclusters = 2
+    iteration = 5000
+    kmeanModel = KMeans(n_clusters = Nclusters ,n_jobs = 4,max_iter = iteration)    
+    y_pred = kmeanModel.fit(X)
+    map_ab['cluster'] = y_pred.labels_
+    a['cluster'] = 1
+    map_ab = pd.concat([map_ab,a],ignore_index=True)
+    map_ab = map_ab.sort_values(by=['vehicleID','GpsTime'],ascending=True)
+    #plt.scatter(X.ix[:, 0], X.ix[:, 1], c=X.ix[:, 2])
+    #plt.show()
+    return (map_ab)

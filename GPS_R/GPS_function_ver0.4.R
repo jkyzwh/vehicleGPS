@@ -35,14 +35,17 @@ calcDistance = function(Lat_A, Lng_A, Lat_B, Lng_B) #考虑赤道与两极半径
   rad_lng_B  =  Lng_B * pi/180
   pA  =  atan(rb / ra * tan(rad_lat_A))
   pB  =  atan(rb / ra * tan(rad_lat_B))
-  xx  =  acos(sin(pA) * sin(pB) + cos(pA) * cos(pB) * cos(rad_lng_A - rad_lng_B))
+  ss = sin(pA) * sin(pB) + cos(pA) * cos(pB) * cos(rad_lng_A - rad_lng_B)
+  if (ss>1){ss = 1}
+  if (ss<-1){ss = -1}
+  xx  =  acos(ss)
   c1  =  (sin(xx) - xx) * (sin(pA) + sin(pB)) ** 2 / cos(xx / 2) ** 2
   c2  =  (sin(xx) + xx) * (sin(pA) - sin(pB)) ** 2 / sin(xx / 2) ** 2
   dr  =  flatten / 8 * (c1 - c2)
   distance  =  ra * (xx + dr)
   return (distance)
 }
-  
+
 # 2. 导入的两客一危数据初始化处理--------------
 # 函数功能
 # 本函数仅针对单一ID数据的初始化工作

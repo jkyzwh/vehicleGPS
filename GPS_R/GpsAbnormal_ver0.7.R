@@ -11,7 +11,6 @@
 # 0. 加载需要的程序包------------
 library(data.table)
 library(psych)
-library(ggplot2)
 library(plyr)
 library(dplyr)
 library(stats)
@@ -34,10 +33,12 @@ library(mice) #前三个包是mice的基础
 
 #调用函数
 
-source("D:/GitHub/vehicleGPS/GPS_R/GPS_function_ver0.4.R")
-setwd("D:/PROdata/vehicle GPS/GPS")
+#source("D:/GitHub/vehicleGPS/GPS_R/GPS_function_ver0.4.R")
+source("/home/zhwh/文档/Github/vehicleGPS/GPS_R/GPS_function_ver0.4.R")
+#setwd("D:/PROdata/vehicle GPS/GPS")
 # 导入初始化数据
-dataName = 'D:/PROdata/Data/dangerous good transport/sichuan-xcar-2016080810.csv'
+#dataName = 'D:/PROdata/Data/dangerous good transport/sichuan-xcar-2016080810.csv'
+dataName = '/home/zhwh/Data/sichuan-xcar-2016080810.csv'
 #GpsData_initial =  read.xlsx(GpsData_initial  =  read_csv(dataName),sheetIndex = 1,header = F,encoding = "UTF-8")
 #GpsData_initial  =  read_csv(dataName)
 colname = c("vehicleID","longitude","latitude",

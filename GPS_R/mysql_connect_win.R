@@ -7,6 +7,14 @@ DB_name <- "vehicleGPS" #使用的数据库名称
 conn <- dbConnect(dbDriver('MySQL'),dbname=DB_name,
                  user = 'zhwh_note', password = '000310',
                  host = '172.16.90.68',port = 3306) #数据库IP与端口
+
+
+summary(conn)
+dbGetInfo(conn)
+dbListResults(conn)
+dbListTables(conn)
+
+
 #获取数据库里的表列表
 tableList = dbListTables(conn)
 #获取数据表1的列名称列表

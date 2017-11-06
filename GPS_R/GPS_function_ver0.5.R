@@ -28,6 +28,8 @@ hageodist  = function(L1, phi1, L2, phi2) #只考虑地球半径，假设地球�
   }
 
 
+
+
 calcDistance = function(Lat_A, Lng_A, Lat_B, Lng_B) #考虑赤道与两极半径不同，地球是个椭球体
 {
   ra  =  6378.140  # 赤道半径 (km)
@@ -40,7 +42,7 @@ calcDistance = function(Lat_A, Lng_A, Lat_B, Lng_B) #考虑赤道与两极半径
   pA  =  atan(rb / ra * tan(rad_lat_A))
   pB  =  atan(rb / ra * tan(rad_lat_B))
   ss = sin(pA) * sin(pB) + cos(pA) * cos(pB) * cos(rad_lng_A - rad_lng_B)
-  if (ss>1) {ss = 1}
+  if (ss>=1) {ss = 1}
   if (ss<-1){ss = -1}
   xx  =  acos(ss)
   c1  =  (sin(xx) - xx) * (sin(pA) + sin(pB)) ** 2 / cos(xx / 2) ** 2
@@ -116,8 +118,8 @@ singleDataINI = function(GPSData)
   #计算相对于起点的距离坐标 Lat_A, Lng_A, Lat_B, Lng_B
   begin_y = GPSData$longitude[1]
   begin_x = GPSData$latitude[1]
-  GPSData$coords_y = calcDistance(begin_x,begin_y,begin_x,GPSData$longitude)*1000
-  GPSData$coords_x = calcDistance(begin_x,begin_y,GPSData$latitude,begin_y)*1000
+  GPSData$coords_y = calcDistance(begin_x,begin_y,begin_x,GPSData$longitude[i])*1000
+  GPSData$coords_x = calcDistance(begin_x,begin_y,GPSData$latitude[i],begin_y)*1000
   GPSData$SpeedChange = c(0,diff(GPSData$GPS_Speed))  #速度变化
   GPSData$Acc = GPSData$SpeedChange/GPSData$GpsTime_diff   #加速度
   GPSData$speed_split = GPSData$GPS_Speed%/%10+1           #速度分组

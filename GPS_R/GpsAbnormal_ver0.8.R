@@ -34,7 +34,7 @@ library(mice) #前三个包是mice的基础
 
 # 0.1 调用函数以及定义常量-------------------------------------------------------------------------
 
-source("D:/GitHub/vehicleGPS/GPS_R/GPS_function_ver0.5.R")
+source("D:/GitHub/vehicleGPS/GPS_R/GPS_function_ver0.6.R")
 setwd ("D:/PROdata/vehicle GPS/GPS")
 col = colors()   #调用R语言颜色空间
 vehicleNum = 30  #vehicleNum是有效ID数据中速度大于零的最小数量
@@ -68,7 +68,7 @@ for (i in 1:length(vehicleIDList))
     if (i > 1)  {map_ab  =  rbind(map_ab,GPSData_ab) }
   }
   print(i)
-  print(length(subset(GPSData,GPS_Speed > 0)$GPS_Speed))
+  #print(length(subset(GPSData,GPS_Speed > 0)$GPS_Speed))
   if(i>100){break()}
 }
 

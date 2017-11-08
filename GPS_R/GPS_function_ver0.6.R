@@ -64,7 +64,7 @@ calcDistance = function(Lat_A, Lng_A, Lat_B, Lng_B) #考虑赤道与两极半径
 # 5. 计算加速度
 # 6. 计算坡度
 
-singleDataINI = function(GPSData)
+singleDataINI = function(GPSData,speedStep=10)
 {
   # 删除重复的数据
   GPSData = GPSData[!duplicated(GPSData$GpsTime),]
@@ -99,8 +99,8 @@ singleDataINI = function(GPSData)
   }
   GPSData$SpeedChange = c(0,diff(GPSData$GPS_Speed))  #速度变化
   GPSData$Acc = GPSData$SpeedChange/GPSData$GpsTime_diff   #加速度
-  GPSData$speed_split = GPSData$GPS_Speed%/%10+1           #速度分组
-  #计算间距
+  GPSData$speed_split = GPSData$GPS_Speed%/%speedStep+1           #速度分组
+  #计算相邻两数据之间的间距
   GPSData$spacing = 0 #两数据行之间行驶距离 Lat_A, Lng_A, Lat_B, Lng_B
   for (i in 1:length(GPSData$vehicleID)){
     if(i>1) {
@@ -121,11 +121,11 @@ singleDataINI = function(GPSData)
   GPSData$coords_y[is.nan(GPSData$coords_y)]  = 0
   GPSData$angleChangeRate[is.nan(GPSData$angleChangeRate)]  = 0
   # 利用library(lubridate)包的函数提取日期和时间
-  GPSData$year = year(GPSData$GpsTime)
-  GPSData$month = month(GPSData$GpsTime)
-  GPSData$day = day(GPSData$GpsTime)
-  GPSData$hour = hour(GPSData$GpsTime)
-  GPSData$weekDay = wday(GPSData$GpsTime,label = T)
+  GPSData$year = year( GPSData$GpsTime)
+  GPSData$month = month( GPSData$GpsTime)
+  GPSData$day = day( GPSData$GpsTime)
+  GPSData$hour = hour( GPSData$GpsTime)
+  GPSData$weekDay = wday(GPSData$GpsTime,label = TRUE)
   return(GPSData)
 }
 

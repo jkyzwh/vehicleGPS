@@ -125,7 +125,7 @@ singleDataINI = function(GPSData,speedStep=10)
   GPSData$month = month( GPSData$GpsTime)
   GPSData$day = day( GPSData$GpsTime)
   GPSData$hour = hour( GPSData$GpsTime)
-  GPSData$weekDay = wday(GPSData$GpsTime,label = TRUE)
+  GPSData$weekDay = lubridate::wday(GPSData$GpsTime,label = TRUE)
   return(GPSData)
 }
 

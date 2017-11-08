@@ -69,7 +69,7 @@ for (i in 1:length(vehicleIDList))
   }
   print(i)
   #print(length(subset(GPSData,GPS_Speed > 0)$GPS_Speed))
-  if(i>100){break()}
+  if(i>1000){break()}
 }
 
 #####################################################################

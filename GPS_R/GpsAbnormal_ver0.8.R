@@ -57,7 +57,7 @@ for (i in 1:length(vehicleIDList))
   GPSData = subset(GPSData_initial,vehicleID == ID)
   if(length(subset(GPSData,GPS_Speed > 0)$GPS_Speed) > vehicleNum) #数据过少的不纳入计算
   {
-    GPSData = singleDataINI(GPSData)
+    GPSData = singleDataINI(GPSData,speedStep = 10)
     GPSData_ab = funAbnormalData(GPSData,0.95)
     #增加颜色属性，使用随机函数随机选择颜色
     #Pointcol  =  round(runif(1,min=1,max=length(col)))

@@ -62,6 +62,7 @@ transformLat = function(x, y) {
 GPSToGaoDecoords = function( GPSData) {
   a = 6378245.0
   ee = 0.00669342162296594323
+  colnames(GPSData) = c("vehicleID","lon","lat","GPS_Speed","direction","elevation","GpsTime" )
   GPSData$dLat = transformLat(GPSData$lon - 105.0, GPSData$lat - 35.0) 
   GPSData$dLon = transformLon(GPSData$lon - 105.0, GPSData$lat - 35.0) 
   GPSData$radLat = GPSData$lat / 180.0 * pi  
@@ -77,12 +78,13 @@ GPSToGaoDecoords = function( GPSData) {
 }
 
 # 2.1 测试GPS坐标转换至高德火星坐标------------------------------------------------------------------
-GPSData2 = GPSToGaoDecoords( map_ab)
+GPSData2 = GPSToGaoDecoords(GPSData)
 map = leaflet(GPSData2)
 map = amap(map)  #使用高德地图
-#map = addTiles(map)
-map = addCircleMarkers(map,lng=~longitude,lat=~latitude,radius = ~8, color = ~col , fillOpacity = 0.5)
-#map = addCircleMarkers(map,lng=~longitude,lat=~latitude,radius = ~8, color = "red" , fillOpacity = 0.5)
+map = addTiles(map)
+map = addCircles(map,lng=~longitude,lat=~latitude,color = "red" , fillOpacity = 0.5) # 绘制圆点
+map = addCircleMarkers(map,lng=~longitude,lat=~latitude,radius = ~8, color = "red" , fillOpacity = 0.5) #绘制圆环点
+map = addPolylines(map,lng=~longitude,lat=~latitude,color = "red" , fillOpacity = 0.5) #绘制路线
 print(map)
 
 # 3. 将高德火星坐标转换为百度BD09坐标----------------------------------------------------------------------
@@ -99,8 +101,6 @@ GaodeToBaidu = function(GaodeData) {
 }
 
 baiduData2 =  GaodeToBaidu(GaodeData)
-
-
 
 # 4. 利用百度地图在静态地图上绘制路线的实例-------------------------------------------------------
 

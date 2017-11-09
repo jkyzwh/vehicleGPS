@@ -51,9 +51,9 @@ for (i in 1:length(vehicleIDList))
 #####################################################################
 driverNum= map_ab[!duplicated(map_ab$vehicleID),]$vehicleID
 begin = "http://restapi.amap.com/v3/autograsp?"
-carid = paste("carid=",'7d1a',as.character(driverNum[1]),sep = "")
+carid = paste("carid=",'7458',as.character(driverNum[1]),sep = "")
 output = "&output=json"
-key = "&key=0db8f3c425720344c18169820cc77d1a"
+key = "&key=2aaa2fd1515f77aa9a6061a202737458"
 
 map_ab = subset(map_ab,vehicleID == driverNum[2] )
 
@@ -88,10 +88,14 @@ for(i in 1:(length(map_ab$vehicleID)-2))
 ###############################################
 # 利用全部数据抓取道路坐标尝试
 ##############################################
+GPSData = GPSToGaoDecoords( GPSData)
+
+GPSData = singleDataINI(GPSData)
+
 begin = "http://restapi.amap.com/v3/autograsp?"
-carid = paste("carid=",'7d1a',as.character(GPSData$vehicleID[1]),sep = "")
+carid = paste("carid=",'7458',as.character(GPSData$vehicleID[1]),sep = "")
 output = "&output=json"
-key = "&key=0db8f3c425720344c18169820cc77d1a"
+key = "&key=2aaa2fd1515f77aa9a6061a202737458"
 
 # 处理时间字符串
 for(i in 1:length(GPSData$GpsTime_UTC))
@@ -152,7 +156,7 @@ time = "&time=1470621608,1470621638,1470621668"
 direction =  "&direction=171,241,1"
 speed = "&speed=36,3,18"
 output = "&output=json"
-key = "&key=0db8f3c425720344c18169820cc77d1a"
+key = "&key=2aaa2fd1515f77aa9a6061a202737458"
 
 url = paste(begin,carid,location,time,direction,speed,output,key,sep = "")
 connect  =  getURL(url,.encoding="utf-8")

@@ -35,6 +35,7 @@ library(mice) #前三个包是mice的基础
 # 0.1 调用函数以及定义常量-------------------------------------------------------------------------
 
 source("D:/GitHub/vehicleGPS/GPS_R/GPS_function_ver0.6.R")
+source("D:/GitHubTree/GPS_R/GPS_function_ver0.6.R")
 setwd ("D:/PROdata/vehicle GPS/GPS")
 col = colors()   #调用R语言颜色空间
 vehicleNum = 30  #vehicleNum是有效ID数据中速度大于零的最小数量
@@ -69,7 +70,7 @@ for (i in 1:length(vehicleIDList))
   }
   print(i)
   #print(length(subset(GPSData,GPS_Speed > 0)$GPS_Speed))
-  if(i>2000){break()}
+  if(i>500){break()}
 }
 
 #####################################################################
@@ -80,8 +81,8 @@ GPSSite = subset(map_ab,  ACCabnormal=="ay_DAC" |angleabnormal == "angle_directi
 #GPSSite = GPSData
 map = leaflet(GPSSite)
 map = amap(map)  #使用高德地图
-#map = addTiles(map)
-map = addCircleMarkers(map,lng=~longitude,lat=~latitude,radius = ~8, color = ~col , fillOpacity = 0.5)
+map = addTiles(map)
+map = addCircles(map,lng=~longitude,lat=~latitude,radius = ~8, color = ~col , fillOpacity = 0.5)
 #map = addCircleMarkers(map,lng=~longitude,lat=~latitude,radius = ~8, color = "red" , fillOpacity = 0.5)
 print(map)
 

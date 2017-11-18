@@ -134,7 +134,9 @@ end = fromJSON(end)$result$formatted_address
 
 # 5.1 利用百度地图获取起终点的百度地图路径信息，绘制高德地图--------------------------------------
 baiduData = getRoute(begin,end, region = '四川',tactics = 12)
+
 GaodeData = bdToGaoDecoords (baiduData) #百度地图坐标转换至火星坐标
+
 map = leaflet(GaodeData)
 map = amap(map)  #使用高德地图
 map = addPolylines(map,lng=~lon,lat=~lat,color = "red" , fillOpacity = 0.5) #绘制路线
@@ -148,9 +150,11 @@ print(map)
 
 # 5.3 原始坐标转换为火星坐标，绘制高德地图---------------------------------------------------------
 GPSData2 = GPSToGaoDecoords(GPSData)
+
 map = leaflet(GPSData2)
 map = amap(map)  #使用高德地图
-map = addPolylines(map,lng=~longitude,lat=~latitude,color = "red" , fillOpacity = 0.5) #绘制路线
+map = addCircles(map,lng=~longitude,lat=~latitude,color = "red" , fillOpacity = 0.5) # 绘制圆点
+#map = addPolylines(map,lng=~longitude,lat=~latitude,color = "red" , fillOpacity = 0.5) #绘制路线
 print(map)
 
 # 5.4 GPS坐标修正后的展示--------------------------------------------------------------------------------

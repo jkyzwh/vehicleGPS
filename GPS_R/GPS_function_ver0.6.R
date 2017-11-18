@@ -54,7 +54,7 @@ calcDistance = function(Lat_A, Lng_A, Lat_B, Lng_B) #考虑赤道与两极半径
   return (distance)
 }
 
-# 2. 导入的两客一危数据初始化处理 singleDataINI---------------
+# 2. 导入的两客一危数据初始化处理 singleDataINI---------------------------
 # 函数功能
 # 本函数仅针对单一ID数据的初始化工作
 # 1. 补全时间字符串的秒
@@ -68,6 +68,8 @@ singleDataINI = function(GPSData,speedStep=10)
 {
   # 删除重复的数据
   GPSData = GPSData[!duplicated(GPSData$GpsTime),]
+  # 将GPS坐标修改为高德地图的火星坐标
+  GPSData = GPSToGaoDecoords(GPSData)
   # 将时间列转化为时间类型
   GPSData$GpsTime  =  as.POSIXlt(GPSData$GpsTime)
   GPSData$GpsTime_UTC = as.numeric(GPSData$GpsTime)
@@ -143,6 +145,10 @@ fun_abnormalACC = function(data,probs=0.95)
   c = merge(b1,b2,all=T)
   c$speed_bottom = (c$speed_split-1)*10
   c$speed_top = c$speed_split*10
+  #c$ay_abnormalAAC = na.spline(c$ay_abnormalAAC) # 样条插值，剔除NA
+  #c$ay_abnormalDAC = na.spline(c$ay_abnormalDAC)
+  #non_zeroindex = which(c$ay_abnormalDAC<0) #筛选样条插值后小于零的值
+  #c$ay_abnormalDAC[non_zeroindex] = 0  #插值后小于零的值赋值为零
   return(c)
 }
 
@@ -155,10 +161,13 @@ fun_abnormalDirection = function(data,probs=0.95)
   names(a) = c("speed_split","angle_abnormalStandard")
   a$speed_bottom = (a$speed_split-1)*10
   a$speed_top = a$speed_split*10
+  #a$angle_abnormalStandard = na.spline(a$angle_abnormalStandard) # 样条插值，剔除NA
+  #non_zeroindex = which(a$angle_abnormalStandard < 0) #筛选样条插值后小于零的值
+  #a$angle_abnormalStandard[non_zeroindex] = 0  #插值后小于零的值赋值为零
   return(a)
 }
 
-#4. 生成加减速异常驾驶行为点计算
+#4. 生成加减速异常驾驶行为点计算----------------------------------------------------------
 ACCab_type  =  function(x,y,z)
 {
   ab = "normal"
@@ -216,3 +225,39 @@ funAbnormalData = function(GPSData,probs = 0.95)
   return(GPSData_ab)
 }
 
+
+
+# 5. 将GPS坐标转换为高德火星坐标，主函数是GPSToGaoDecoords( GPSData)----------------------------
+transformLon = function(x, y) {
+  ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * sqrt(abs(x))
+  ret = ret + (20.0 * sin(6.0 * x * pi) + 20.0 * sin(2.0 * x * pi)) * 2.0 / 3.0
+  ret = ret + (20.0 * sin(x * pi) + 40.0 * sin(x / 3.0 * pi)) * 2.0 / 3.0
+  ret = ret + (150.0 * sin(x / 12.0 * pi) + 300.0 * sin(x / 30.0 * pi)) * 2.0 / 3.0
+  return (ret)
+}
+
+transformLat = function(x, y) {
+  ret = (-100.0) + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 *sqrt(abs(x))
+  ret = ret + (20.0 * sin(6.0 * x * pi) + 20.0 * sin(2.0 * x * pi)) * 2.0 / 3.0
+  ret = ret + (20.0 * sin(y * pi) + 40.0 * sin(y / 3.0 * pi)) * 2.0 / 3.0
+  ret = ret + (160.0 * sin(y / 12.0 * pi) + 320 * sin(y * pi / 30.0)) * 2.0 / 3.0
+  return (ret)
+}
+
+GPSToGaoDecoords = function( GPSData) {
+  a = 6378245.0
+  ee = 0.00669342162296594323
+  colnames(GPSData) = c("vehicleID","lon","lat","GPS_Speed","direction","elevation","GpsTime" )
+  GPSData$dLat = transformLat(GPSData$lon - 105.0, GPSData$lat - 35.0) 
+  GPSData$dLon = transformLon(GPSData$lon - 105.0, GPSData$lat - 35.0) 
+  GPSData$radLat = GPSData$lat / 180.0 * pi  
+  GPSData$magic = sin(GPSData$radLat) 
+  GPSData$magic = 1 - ee * GPSData$magic * GPSData$magic 
+  GPSData$sqrtMagic = sqrt(GPSData$magic)  
+  GPSData$dLat = (GPSData$dLat * 180.0) / ((a * (1 - ee)) / (GPSData$magic * GPSData$sqrtMagic) * pi)  
+  GPSData$dLon = (GPSData$dLon * 180.0) / (a / GPSData$sqrtMagic * cos(GPSData$radLat) * pi) 
+  GPSData$latitude = GPSData$lat + GPSData$dLat  
+  GPSData$longitude = GPSData$lon + GPSData$dLon  
+  return(subset(GPSData,select = c("vehicleID","longitude","latitude",
+                                   "GPS_Speed","direction","elevation","GpsTime" )))
+}

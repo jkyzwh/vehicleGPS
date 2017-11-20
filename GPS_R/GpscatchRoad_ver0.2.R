@@ -2,6 +2,14 @@
 # 本程序用于调用高德API匹配道路信息
 # 结合地图，绘制运行图
 #####################################################
+# install yesterday's version of checkpoint, by date
+#packageurl <- "https://mran.microsoft.com/snapshot/2017-07-30/bin/windows/contrib/3.4/dplyr_0.7.2.zip"
+#packageurl <- "https://mran.microsoft.com/snapshot/2017-07-30/bin/windows/contrib/3.4/readr_1.1.1.zip"
+#install.packages(packageurl, repos=NULL, type="source")
+#require(devtools)
+#install_version("dplyr", version = "0.7.3", repos = "http://cran.us.r-project.org")
+#install_version("readr", version = "1.1.0", repos = "http://cran.us.r-project.org")
+
 
 # 0. 加载需要的程序包------------
 library(data.table)
@@ -13,12 +21,11 @@ library(plyr)
 library(lubridate)  #时间数据处理包
 library(stringr)
 library(readr)
-library(ggplot2)
 library(rjson)
 library(RCurl)
 library(httr)
 
-source("D:/PROdata/vehicle GPS/GPS/GPS_function_ver0.4.R")
+source("D:/GitHub/vehicleGPS/GPS_R/GPS_function_ver0.6.R")
 setwd("D:/PROdata/vehicle GPS/GPS")
 # 导入初始化数据
 dataName = 'D:/PROdata/Data/dangerous good transport/sichuan-xcar-2016080810.csv'
@@ -37,6 +44,7 @@ GPSData = subset(GPSData_initial,vehicleID == ID) #随机抽样一个GPS车辆�
 #GPSData = GPSToGaoDecoords(GPSData)
 GPSData = singleDataINI(GPSData)
 length(GPSData$vehicleID)
+length(subset(GPSData,GPS_Speed > 0)$vehicleID)
 
 ######################################################################
 #抓取高德地图的道路坐标信息
@@ -47,6 +55,12 @@ catch_Road = function(data){
   carid = paste("&carid=",'7458',as.character(data$vehicleID[1]),sep = "")
   output = "&output=json"
   key = "&key=2aaa2fd1515f77aa9a6061a202737458"
+  data$roadname = "na"
+  data$roadlevel = 0
+  data$speedlimit = 0
+  data$lon_gaode = 'na'
+  data$lat_gaode = ''
+  
   for(i in 1:(length(data$vehicleID)-2))  {
     time1 = data$GpsTime_UTC[i];time2 = data$GpsTime_UTC[i+1];time3 = data$GpsTime_UTC[i+2]
     time = paste(time1,time2,time3,sep = ',')
@@ -68,152 +82,36 @@ catch_Road = function(data){
     location = paste("&locations=",location,sep = '')
     url = paste(begin,key,carid,location,time,direction,speed,output,sep = "")
     connect  =  getURL(url,.encoding="utf-8")
+    x  =  fromJSON(connect)
+    x1 =  x$roads
     print('i=');print(i)
-    if(i==1){a = c(i,connect)}
-    if(i>1){a= rbind(a,c(i,connect))}
-  }
-  return(a)
-}
-amap  =  fromJSON(connect)
-x = catch_Road(GPSData)
-
-
-
-
-###############################################
-# 利用全部数据抓取道路坐标尝试
-##############################################
-GPSData = GPSToGaoDecoords( GPSData)
-
-begin = "http://restapi.amap.com/v3/autograsp?"
-carid = paste("&carid=",'7458',as.character(GPSData$vehicleID[1]),sep = "")
-output = "&output=json"
-key = "&key=2aaa2fd1515f77aa9a6061a202737458"
-
-# 处理时间字符串
-for(i in 1:length(GPSData$GpsTime_UTC))
-{
-  GPStime = as.character(GPSData$GpsTime_UTC[i])
-  if(i==1){
-    time = GPStime}
-  else{
-    time = paste(time,GPStime,sep=",")}
-}
-time = paste("&time=",time,sep = '')
-
-# 处理方位角字符串
-for(i in 1:length(GPSData$direction))
-{
-  Direction = as.character(GPSData$direction[i])
-  if(i==1){
-    direction = Direction}
-  else{
-    direction = paste(direction,Direction,sep=",")}
-}
-direction = paste("&direction=",direction,sep = '')
-
-# 处理速度字符串
-for(i in 1:length(GPSData$GPS_Speed))
-{
-  Speed = as.character(GPSData$GPS_Speed[i])
-  if(i==1){
-    speed = Speed}
-  else{
-    speed = paste(speed,Speed,sep=",")}
-}
-speed = paste("&speed=",speed,sep = '')
-
-# 处理经纬度location字符串
-for(i in 1:length(GPSData$latitude))
-{
-  lat = as.character(GPSData$latitude[i]); long = as.character(GPSData$longitude[i])
-  Location = paste(long,lat,sep = ',')
-  if(i==1){
-    location = Location}
-  else{
-    location = paste(location,Location,sep = '|')}
-}
-location = paste("&locations=",location,sep = '')
-
-
-url = paste(begin,carid,location,time,direction,speed,output,key,sep = "")
-url = paste(begin,key,carid,location,time,direction,speed,output,sep = "")
-connect  =  getURL(url,.encoding="utf-8")
-amap  =  fromJSON(connect)
-
-############################################################
-
-begin = "http://restapi.amap.com/v3/autograsp?"
-carid = "carid=3cf7807acf6ac09f"
-location = "&locations=104.0613,29.63833|104.0610,29.63632|104.0613,29.63650"
-time = "&time=1470621608,1470621638,1470621668"
-direction =  "&direction=171,241,1"
-speed = "&speed=36,3,18"
-output = "&output=json"
-key = "&key=2aaa2fd1515f77aa9a6061a202737458"
-
-url = paste(begin,carid,location,time,direction,speed,output,key,sep = "")
-connect  =  getURL(url,.encoding="utf-8")
-
-# 利用高德地图API抓取所在道路信息，返回值为json格式数据
-
-Amap_getRoad  =  function(url)
-{
-  msg.load  =  tryCatch(
-  {
-    #connect  =  getURL(url,httpheader=myheader,.encoding="utf-8")
-    connect  =  getURL(url,.encoding="utf-8")
-    amap  =  fromJSON(connect)
-    msg.load  =  "TRUE"
-  }, error = function(e) {"error"}
-  )
-  if(msg.load=='error'){
-    Sys.sleep(runif(1,2,5))
-    msg.load  =  tryCatch({
-      amap  =  content(GET(url,add_headers(myheader)))
-      msg.load  =  "TRUE"
-    }, error = function(e) {
-      "error"
+    if( length(x1)>0){
+      x11 = x1[[1]]
+      if ( length(x11$roadname)>0){
+        data$roadname[i] = x11$roadname; data$roadlevel[i] = x11$roadlevel; data$speedlimit[i] = x11$maxspeed
+        a1 = x11$crosspoint;l1 = str_locate(a1,",")
+        data$lon_gaode[i] = str_sub(a1,1,l1[1]-1);  data$lat_gaode[i] = str_sub(a1,l1[1]+1,str_length(a1))
+      }
+      x12 = x1[[2]]
+      if ( length(x12$roadname)>0){
+        data$roadname[i+1] = x12$roadname;  data$roadlevel[i+1] = x12$roadlevel;  data$speedlimit[i+1] = x12$maxspeed
+        a2 = x12$crosspoint;  l2 = str_locate(a2,",")
+        data$lon_gaode[i+1] = str_sub(a2,1,l2[1]-1);data$lat_gaode[i+1] = str_sub(a2,l2[1]+1,str_length(a2))
+      }
+      x13 = x1[[3]]
+      if ( length(x13$roadname)>0){
+        data$roadname[i+2] = x13$roadname;  data$roadlevel[i+2] = x13$roadlevel;  data$speedlimit[i+2] = x13$maxspeed
+        a3 = x13$crosspoint;  l3 = str_locate(a3,",")
+        data$lon_gaode[i+2] = str_sub(a3,1,l3[1]-1);data$lat_gaode[i+2] = str_sub(a3,l3[1]+1,str_length(a3))
+      }
     }
-    )
+    
   }
-  return(amap)
+  return(data)
 }
 
-a = Amap_getRoad(url)
-json_data_frame  =  as.data.frame(a)
+GPSData = catch_Road(GPSData)
 
-print(a)
-aa = c("104.0613,29.63833","104.0610,29.63632","104.0613,29.63650")
-b = c(a$roads[[1]]$crosspoint,a$roads[[2]]$crosspoint,a$roads[[3]]$crosspoint)
-
-latitude = c(29.63833,29.63632,29.63650,29.638342,29.636364,29.636591)
-longitude = c(104.0613,104.0610,104.0613,104.06124,104.06076,104.060814)
-col = c("red","red","red","black","black","black")
-X1 = data.frame(latitude,longitude,col)
-
-map = leaflet(X1)
-map = amap(map)  #使用高德地图
-map = addCircleMarkers(map,lng=~longitude,lat=~latitude,radius = ~8, color = ~col , fillOpacity = 0.5)
-print(map)
-
-##################################################################
-#利用百度地图抓取轨迹-----------------
-####################################################################
-ak = '?ak=kvfrFNTcOQWVFUmhwqZhYzxxVj088NuW'
-# 百度地图鹰眼服务的service_id：149198
-service_id = '&service_id=149198'
-entity_name = '&entity_name=GPScatch'
-entityAdd = 'http://yingyan.baidu.com/api/v3/entity/add'
-entityAdd =paste(entityAdd,ak,service_id,entity_name,sep = "")
-
-connect  =  getURL(entityAdd,.encoding="utf-8")
-
-
-entityDel = "http://yingyan.baidu.com/api/v3/entity/delete"
-entityDel =paste(entityDel,ak,service_id,entity_name,sep = "")
-
-connect  =  getURL(entityDel,.encoding="utf-8")
 
 
 

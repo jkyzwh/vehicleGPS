@@ -109,7 +109,7 @@ bjMap = getBaiduMap('北京', color='color')
 df = getRoute('首都国际机场', '北京南苑机场', region = '北京',tactics = 12)
 ggmap(bjMap) + geom_path(data = df, aes(lon, lat), alpha = 0.5, col = 'red')
 
-# 5. 利用百度地图获取GPS信息的地址和路径信息--------------------------------------------------
+# 5. 利用百度地图获取GPS信息的地址和路径信息------------------------------------------------------
 library(data.table)
 dataName = 'D:/PROdata/Data/dangerous good transport/sichuan-xcar-2016080810.csv'
 colname = c("vehicleID","longitude","latitude",
@@ -132,7 +132,7 @@ library(rjson)
 begin = fromJSON(begin)$result$formatted_address
 end = fromJSON(end)$result$formatted_address
 
-# 5.1 利用百度地图获取起终点的百度地图路径信息，绘制高德地图--------------------------------------
+# 5.1 利用百度地图获取起终点的百度地图路径信息，绘制高德地图-----------------------------------------
 baiduData = getRoute(begin,end, region = '四川',tactics = 12)
 
 GaodeData = bdToGaoDecoords (baiduData) #百度地图坐标转换至火星坐标
@@ -148,7 +148,7 @@ map = amap(map)  #使用高德地图
 map = addPolylines(map,lng=~longitude,lat=~latitude,color = "red" , fillOpacity = 0.5) #绘制路线
 print(map)
 
-# 5.3 原始坐标转换为火星坐标，绘制高德地图---------------------------------------------------------
+# 5.3 原始坐标转换为火星坐标，绘制高德地图-------------------------------------------------------------
 GPSData2 = GPSToGaoDecoords(GPSData)
 
 map = leaflet(GPSData2)

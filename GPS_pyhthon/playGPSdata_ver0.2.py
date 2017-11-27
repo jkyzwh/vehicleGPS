@@ -135,6 +135,38 @@ def vehicleinfo(GPSData_initial,nmax=100):
     vehicle_information["timeAll"] = (vehicle_information["endtime"]-vehicle_information["begintime"])/np.timedelta64(1, 's')
     return(vehicle_information)
     
+
+# =============================================================================
+# 利用高德地图ASP，利用GPS坐标获取道路信息
+# =============================================================================
+from selenium import webdriver
+import time
+driver = webdriver.PhantomJS() #利用无头浏览器
+
+def regeocode(longitude,latitude):
+    #base = 'http://172.16.0.105/GPS2ROAD.asp?'
+    #base = 'http://211.103.187.183//GPS2ROAD.asp?'
+    #内网网址，http://172.16.0.105;外网网址，http://211.103.187.183/
+    base = 'http://172.16.90.47/ASP/GPS2ROAD.asp？'
+    url=base+'lng='+str(longitude)+'&lat='+str(latitude)
+    result = ''
+    i=0
+    t_star = time.time()
+    try:
+        driver.get(url)
+    except :
+        print('数据出错')
+        result = '数据出错;请查找原因'
+    #循环等待返回结果，拿到结果，或者达到i设定的循环还没有返回结果就跳出循环
+    while result=='':
+        i+=1
+        result = driver.find_element_by_id("result").text
+        t_end = time.time()
+        if i>500:
+            re_time=t_end - t_star
+            result='没有取到结果;用时'+str(re_time)+'秒'
+    return (result)
+    
 #==============================================================================
 # 导入原始数据，对原始数据的列进行标准化命名
 #==============================================================================
@@ -153,71 +185,59 @@ GPSData_initial.columns = colname
 rownum = len(GPSData_initial.drop_duplicates(['vehicleID'])['vehicleID'])
 #vehicle_information =  vehicleinfo(GPSData_initial,rownum)
 vehicle_information =  vehicleinfo(GPSData_initial,1000)
+'''
+筛选速度非零数据行大于100，GPS数据采样间隔小于60S的数据
+'''
+effectiveData_info = vehicle_information[(vehicle_information['unzerospeedNum']>=100)&\
+                                   (vehicle_information['timespaceMode']<=60)] 
 
-# =============================================================================
-# 利用高德地图ASP，利用GPS坐标获取道路信息
-# =============================================================================
-from selenium import webdriver
-import time
-driver = webdriver.PhantomJS() #利用无头浏览器
+for i in range(len(effectiveData_info.index)):
+    IDn = effectiveData_info['ID'].values[i]
+    print("i=",i)
+    if i == 1:
+        effectiveData =  GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn].copy()
+    if i>1:
+        effectiveData = effectiveData.append(GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn])
 
-def regeocode(longitude,latitude):
-    #base = 'http://172.16.0.105/GPS2ROAD.asp?'
-    base = 'http://211.103.187.183//GPS2ROAD.asp?'
-    #内网网址，http://172.16.0.105;外网网址，http://211.103.187.183/
-    #base = 'http://172.16.90.47/ASP/GPS2ROAD.asp？'
-    url=base+'lng='+str(longitude)+'&lat='+str(latitude)
-    result = ''
-    i=0
-    t_star = time.time()
-    try:
-        driver.get(url)
-    except :
-        print('数据出错')
-        result = '数据出错;请查找原因'
-    #循环等待返回结果，拿到结果，或者达到i设定的循环还没有返回结果就跳出循环
-    while result=='':
-        i+=1
-        result = driver.find_element_by_id("result").text
-        t_end = time.time()
-        if i>300:
-            re_time=t_end - t_star
-            result='没有取到结果;用时'+str(re_time)+'秒'
-    return (result)
 # =============================================================================
 # 筛选有使用价值的数据，抓取高德地图道路信息
 # =============================================================================
 
-ID = vehicle_information[vehicle_information['unzerospeedNum']==max(vehicle_information['unzerospeedNum'])]['ID'].values[0]
-GPSData = GPSData_initial[GPSData_initial['vehicleID']==ID] 
+#ID = vehicle_information[vehicle_information['unzerospeedNum']==max(vehicle_information['unzerospeedNum'])]['ID'].values[0]
+#ID = vehicle_information[vehicle_information['unzerospeedNum']==98]['ID'].values[0]    
+#GPSData = GPSData_initial[GPSData_initial['vehicleID']==ID] 
 
 col_name = ["vehicleID","longitude","latitude","GPS_Speed","direction","elevation","GpsTime",\
            'lon_fix','lat_fix','lon_GD','lat_GD','dis_to_GD','city',\
            'roadName', 'roadType','roadWidth','lon_roadbegin','lat_roadbegin','dis_to_BP',\
            'roadpath']
     
-GPSData = GPSData.reindex(columns=col_name) 
+effectiveData = effectiveData.reindex(columns=col_name) 
+
 
 '''
-指定字符型列的类型
+为便于计算，将数据框指定为字符型
 '''
 
-GPSData['city'] = GPSData['city'].astype(str)
-GPSData['roadName'] = GPSData['roadName'].astype(str)
-GPSData['roadType'] = GPSData['roadType'].astype(str)
-GPSData['roadpath'] = GPSData['roadpath'].astype(str)
+#GPSData['city'] = GPSData['city'].astype(str)
+#GPSData['roadName'] = GPSData['roadName'].astype(str)
+#GPSData['roadType'] = GPSData['roadType'].astype(str)
+#GPSData['roadpath'] = GPSData['roadpath'].astype(str)
+
+effectiveData = effectiveData.astype(str)
+
 '''
 抓取高德地图信息
 '''
 t_star0 = time.time()#开始处理数据，以此时为数据处理起点时间
 #i=0#数据条数
-for i in range(len(GPSData.index)):#开始数据处理大循环
+for i in range(len(effectiveData.index)):#开始数据处理大循环
     #print(row['longitude'])
     #i+=1
-    Index = GPSData.index[i]
+    #Index = GPSData.index[i]
     t_star=time.time()#本条数据开始处理的时间,大批处理数据时可以注释掉
-    longitude = GPSData["longitude"].values[i]#取经度，肯定是东经
-    latitude = GPSData["latitude"].values[i]# 取纬度，肯定是北纬
+    longitude = effectiveData["longitude"].values[i]#取经度，肯定是东经
+    latitude = effectiveData["latitude"].values[i]# 取纬度，肯定是北纬
     roads_info=regeocode(longitude,latitude)#调用函数，取回结果
     
     '''以下对返回结果进行字符串解析。解析方式和结果定义形式有关。
@@ -225,25 +245,23 @@ for i in range(len(GPSData.index)):#开始数据处理大循环
     分号把“道路全坐标”和其他数据分开了，其他数据之间用逗号分隔'''
     roads0 = roads_info.split(';')#分离“道路全坐标”和其他数据
     roads = roads0[0].split(',')
-    GPSData['lon_fix'].values[i] = roads[0]
-    GPSData['lat_fix'].values[i] = roads[1]
-    GPSData['lon_GD'].values[i] = roads[2]
-    GPSData['lat_GD'].values[i] = roads[3]
-    GPSData['dis_to_GD'].values[i] = roads[4]
-    GPSData['city'].values[i] = roads[5]
-    GPSData['roadName'].values[i] = roads[6]
-    GPSData['roadType'].values[i] = roads[7]
-    GPSData['roadWidth'].values[i] = roads[8]
-    GPSData['lon_roadbegin'].values[i] = roads[9]
-    GPSData['lat_roadbegin'].values[i] = roads[10]
-    if roads[11] == 'undefined':
-        GPSData['dis_to_BP'].values[i] = 0
-    else:        
-        GPSData['dis_to_BP'].values[i] = roads[11]
+    if str(roads[0]).find('没有取到结果')<0:
+        effectiveData['lon_fix'].values[i] = roads[0]
+        effectiveData['lat_fix'].values[i] = roads[1]
+        effectiveData['lon_GD'].values[i] = roads[2]
+        effectiveData['lat_GD'].values[i] = roads[3]
+        effectiveData['dis_to_GD'].values[i] = roads[4]
+        effectiveData['city'].values[i] = roads[5]
+        effectiveData['roadName'].values[i] = roads[6]
+        effectiveData['roadType'].values[i] = roads[7]
+        effectiveData['roadWidth'].values[i] = roads[8]
+        effectiveData['lon_roadbegin'].values[i] = roads[9]
+        effectiveData['lat_roadbegin'].values[i] = roads[10]
+        effectiveData['dis_to_BP'].values[i] = roads[11]
     if len(roads0)>1:
-        GPSData['roadpath'].values[i]=str(roads0[1].split('@'))#道路全坐标长度不定，有的道路坐标点很多，有的道路很少，如果每个坐标单独储存，反而不好用。这里全部保存在一个单元格，split不是要解析字符串，而是转换成列表
+        effectiveData['roadpath'].values[i]=str(roads0[1].split('@'))#道路全坐标长度不定，有的道路坐标点很多，有的道路很少，如果每个坐标单独储存，反而不好用。这里全部保存在一个单元格，split不是要解析字符串，而是转换成列表
     else:
-        GPSData['roadpath'].values[i] = ['导航数据出现问题']
+        effectiveData['roadpath'].values[i] = ['导航数据出现问题']
     #在原数据的末尾，添加我们的结果
     t_end = time.time()#处理本条数据的结束时间,大批处理数据时可以注释掉
     print(i,t_end-t_star)#大批处理数据时可以注释掉

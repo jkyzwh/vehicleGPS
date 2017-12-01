@@ -170,8 +170,8 @@ def regeocode(longitude,latitude):
 #==============================================================================
 # 导入原始数据，对原始数据的列进行标准化命名
 #==============================================================================
-dataName = 'D:\\PROdata\\Data\\dangerous good transport\\sichuan-xcar-2016080810.csv'
-#dataName = '/home/zhwh/Data/sichuan-xcar-2016080810.csv'
+#dataName = 'D:\\PROdata\\Data\\dangerous good transport\\sichuan-xcar-2016080810.csv'
+dataName = '/home/zhwh/Data/sichuan-xcar-2016080810.csv'
 colname = ["vehicleID","longitude","latitude",\
            "GPS_Speed","direction","elevation",\
            "GpsTime"]
@@ -183,8 +183,8 @@ GPSData_initial.columns = colname
 # 对所有车辆的数据基本属性进行描述
 # =============================================================================
 rownum = len(GPSData_initial.drop_duplicates(['vehicleID'])['vehicleID'])
-#vehicle_information =  vehicleinfo(GPSData_initial,rownum)
-vehicle_information =  vehicleinfo(GPSData_initial,1000)
+vehicle_information =  vehicleinfo(GPSData_initial,rownum)
+#vehicle_information =  vehicleinfo(GPSData_initial,1000)
 '''
 筛选速度非零数据行大于100，GPS数据采样间隔小于60S的数据
 '''
@@ -245,7 +245,7 @@ for i in range(len(effectiveData.index)):#开始数据处理大循环
     分号把“道路全坐标”和其他数据分开了，其他数据之间用逗号分隔'''
     roads0 = roads_info.split(';')#分离“道路全坐标”和其他数据
     roads = roads0[0].split(',')
-    if str(roads[0]).find('没有取到结果')<0:
+    if str(roads[0]).find('没有取到结果')  <0:
         effectiveData['lon_fix'].values[i] = roads[0]
         effectiveData['lat_fix'].values[i] = roads[1]
         effectiveData['lon_GD'].values[i] = roads[2]
@@ -267,5 +267,6 @@ for i in range(len(effectiveData.index)):#开始数据处理大循环
     print(i,t_end-t_star)#大批处理数据时可以注释掉
     
 
-
+effectiveData.to_csv('/home/zhwh/Data/effectiveData.csv')
+effectiveData_info.to_csv('/home/zhwh/Data/effectiveData_info.csv')
 

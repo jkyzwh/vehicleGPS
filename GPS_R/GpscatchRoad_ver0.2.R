@@ -84,7 +84,7 @@ catch_Road = function(data){
     connect  =  getURL(url,.encoding="utf-8")
     x  =  fromJSON(connect)
     x1 =  x$roads
-    print('i=');print(i)
+    print(paste('i=',i))
     if( length(x1)>0){
       x11 = x1[[1]]
       if ( length(x11$roadname)>0){

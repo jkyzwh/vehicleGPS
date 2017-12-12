@@ -7,28 +7,28 @@ Created on Tue Jul 25 16:14:31 2017
 @author: Zhwh-notbook
 """
 import os
-os.chdir("D:\\GitHubTree\\vehicleGPS\\GPS_pyhthon")   #修改当前工作目录
-os.getcwd()    #获取当前工作目录
-
-
-#import math
+import random
 import pandas as pd
-import numpy as np
-import random 
 import fun
-#import datetime as dt
-#import time
-    
-#==============================================================================
+import time
+
+# import math
+# import numpy as np
+# import datetime as dt
+
+
+os.chdir("D:\\GitHubTree\\vehicleGPS\\GPS_pyhthon")   # 修改当前工作目录
+os.getcwd()    # 获取当前工作目录
+
+# ==============================================================================
 # 导入原始数据，对原始数据的列进行标准化命名
-#==============================================================================
+# ==============================================================================
 dataName = 'D:\\PROdata\\Data\\dangerous good transport\\sichuan-xcar-2016080810.csv'
-#dataName = '/home/zhwh/Data/sichuan-xcar-2016080810.csv'
-colname = ["vehicleID","longitude","latitude",\
-           "GPS_Speed","direction","elevation",\
+# dataName = '/home/zhwh/Data/sichuan-xcar-2016080810.csv'
+colname = ["vehicleID", "longitude", "latitude", "GPS_Speed", "direction", "elevation", \
            "GpsTime"]
 print('读入两客一危数据')
-GPSData_initial = pd.read_csv(dataName,header=0) 
+GPSData_initial = pd.read_csv(dataName, header=0)
 GPSData_initial.columns = colname
 
 # =============================================================================
@@ -63,9 +63,9 @@ for i in range(len(effectiveData_info.index)):
 # 筛选有使用价值的数据，抓取高德地图道路信息
 # =============================================================================
 
-col_name = ["vehicleID", "longitude", "latitude", "GPS_Speed", "direction", "elevation", "GpsTime", \
-            'lon_fix', 'lat_fix', 'lon_GD', 'lat_GD', 'dis_to_GD', 'city', \
-            'roadName', 'roadType', 'roadWidth', 'lon_roadbegin', 'lat_roadbegin', 'dis_to_BP', \
+col_name = ["vehicleID", "longitude", "latitude", "GPS_Speed", "direction", "elevation", "GpsTime",\
+            'lon_fix', 'lat_fix', 'lon_GD', 'lat_GD', 'dis_to_GD', 'city',\
+            'roadName', 'roadType', 'roadWidth', 'lon_roadbegin', 'lat_roadbegin', 'dis_to_BP',\
             'roadpath']
 
 effectiveData = effectiveData.reindex(columns=col_name)
@@ -87,7 +87,7 @@ for i in range(len(effectiveData.index)):  # 开始数据处理大循环
     t_star = time.time()  # 本条数据开始处理的时间,大批处理数据时可以注释掉
     longitude = effectiveData["longitude"].values[i]  # 取经度，肯定是东经
     latitude = effectiveData["latitude"].values[i]  # 取纬度，肯定是北纬
-    roads_info = regeocode(longitude, latitude)  # 调用函数，取回结果
+    roads_info = fun.regeocode(longitude, latitude)  # 调用函数，取回结果
 
     '''以下对返回结果进行字符串解析。解析方式和结果定义形式有关。
     如一个取回的结果“106.749118,31.86048,106.749,31.8613,105,巴中市,云台街,省道,8,106.747231,31.860627,473;106.747231,31.860627,106.749465,31.861792”，
@@ -108,8 +108,8 @@ for i in range(len(effectiveData.index)):  # 开始数据处理大循环
         effectiveData['lat_roadbegin'].values[i] = roads[10]
         effectiveData['dis_to_BP'].values[i] = roads[11]
     if len(roads0) > 1:
-        effectiveData['roadpath'].values[i] = str(
-            roads0[1].split('@'))  # 道路全坐标长度不定，有的道路坐标点很多，有的道路很少，如果每个坐标单独储存，反而不好用。这里全部保存在一个单元格，split不是要解析字符串，而是转换成列表
+        effectiveData['roadpath'].values[i] = str(roads0[1].split('@'))
+        # 道路全坐标长度不定，有的道路坐标点很多，有的道路很少，如果每个坐标单独储存，反而不好用。这里全部保存在一个单元格，split不是要解析字符串，而是转换成列表
     else:
         effectiveData['roadpath'].values[i] = ['导航数据出现问题']
     # 在原数据的末尾，添加我们的结果

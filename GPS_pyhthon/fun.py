@@ -396,6 +396,10 @@ from selenium import webdriver
 import time
 
 def regeocode(longitude,latitude):
+    """
+
+    :rtype: object
+    """
     driver = webdriver.PhantomJS()  # 利用无头浏览器
     #base = 'http://172.16.0.105/GPS2ROAD.asp?'
     #base = 'http://211.103.187.183//GPS2ROAD.asp?'

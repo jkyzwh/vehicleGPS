@@ -43,9 +43,82 @@ GPSData_initial.columns = colname
 #end = time.time()
 #print (end-start)
 
-vehicle_information =  fun.vehicleinfo2(GPSData_initial)
+vehicle_information = fun.vehicleinfo2(GPSData_initial)
 
+'''
+筛选速度非零数据行大于100，GPS数据采样间隔小于60S的数据
+'''
+effectiveData_info = vehicle_information[(vehicle_information['unzerospeedNum'] >= 100) & \
+                                         (vehicle_information['timespaceMode'] <= 60)]
 
+for i in range(len(effectiveData_info.index)):
+    IDn = effectiveData_info['ID'].values[i]
+    print("i=", i)
+    if i == 1:
+        effectiveData = GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn].copy()
+    if i > 1:
+        effectiveData = effectiveData.append(GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn])
+
+# =============================================================================
+# 筛选有使用价值的数据，抓取高德地图道路信息
+# =============================================================================
+
+col_name = ["vehicleID", "longitude", "latitude", "GPS_Speed", "direction", "elevation", "GpsTime", \
+            'lon_fix', 'lat_fix', 'lon_GD', 'lat_GD', 'dis_to_GD', 'city', \
+            'roadName', 'roadType', 'roadWidth', 'lon_roadbegin', 'lat_roadbegin', 'dis_to_BP', \
+            'roadpath']
+
+effectiveData = effectiveData.reindex(columns=col_name)
+
+'''
+为便于计算，将数据框指定为字符型
+'''
+effectiveData = effectiveData.astype(str)
+
+'''
+抓取高德地图信息
+'''
+t_star0 = time.time()  # 开始处理数据，以此时为数据处理起点时间
+# i=0#数据条数
+for i in range(len(effectiveData.index)):  # 开始数据处理大循环
+    # print(row['longitude'])
+    # i+=1
+    # Index = GPSData.index[i]
+    t_star = time.time()  # 本条数据开始处理的时间,大批处理数据时可以注释掉
+    longitude = effectiveData["longitude"].values[i]  # 取经度，肯定是东经
+    latitude = effectiveData["latitude"].values[i]  # 取纬度，肯定是北纬
+    roads_info = regeocode(longitude, latitude)  # 调用函数，取回结果
+
+    '''以下对返回结果进行字符串解析。解析方式和结果定义形式有关。
+    如一个取回的结果“106.749118,31.86048,106.749,31.8613,105,巴中市,云台街,省道,8,106.747231,31.860627,473;106.747231,31.860627,106.749465,31.861792”，
+    分号把“道路全坐标”和其他数据分开了，其他数据之间用逗号分隔'''
+    roads0 = roads_info.split(';')  # 分离“道路全坐标”和其他数据
+    roads = roads0[0].split(',')
+    if str(roads[0]).find('没有取到结果') < 0:
+        effectiveData['lon_fix'].values[i] = roads[0]
+        effectiveData['lat_fix'].values[i] = roads[1]
+        effectiveData['lon_GD'].values[i] = roads[2]
+        effectiveData['lat_GD'].values[i] = roads[3]
+        effectiveData['dis_to_GD'].values[i] = roads[4]
+        effectiveData['city'].values[i] = roads[5]
+        effectiveData['roadName'].values[i] = roads[6]
+        effectiveData['roadType'].values[i] = roads[7]
+        effectiveData['roadWidth'].values[i] = roads[8]
+        effectiveData['lon_roadbegin'].values[i] = roads[9]
+        effectiveData['lat_roadbegin'].values[i] = roads[10]
+        effectiveData['dis_to_BP'].values[i] = roads[11]
+    if len(roads0) > 1:
+        effectiveData['roadpath'].values[i] = str(
+            roads0[1].split('@'))  # 道路全坐标长度不定，有的道路坐标点很多，有的道路很少，如果每个坐标单独储存，反而不好用。这里全部保存在一个单元格，split不是要解析字符串，而是转换成列表
+    else:
+        effectiveData['roadpath'].values[i] = ['导航数据出现问题']
+    # 在原数据的末尾，添加我们的结果
+    t_end = time.time()  # 处理本条数据的结束时间,大批处理数据时可以注释掉
+    print(i, t_end - t_star)
+
+# =============================================================================
+# 筛选异常驾驶行为点
+# =============================================================================
 '''
 将GPS时间转换为time类型
 '''
@@ -59,164 +132,28 @@ for i in range(len(ID.index)):
     GPSData = GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn].copy()
     GPSData = fun.vehicleDataINI(GPSData)
     if len(GPSData.loc[GPSData['spacing'] > 0]) > vehicleNum  and \
-    len(GPSData.loc[GPSData["GPS_Speed"] > 0]) > vehicleNum: 
-        
+    len(GPSData.loc[GPSData["GPS_Speed"] > 0]) > vehicleNum:
+
         GPSData_ab = fun.funAbnormalData(GPSData,0.95)
         GPSData_ab['vehicleID'] = IDn
         Pointcol = random.choice(fun.col)
         if len(GPSData_ab['vehicleID'])>0:
             GPSData_ab['col'] = Pointcol
-            
+
         if i == 1:
             map_ab = GPSData_ab.copy()
             #map_ab = IndependentPoint(map_ab,L=300,Nclusters=2)
-            
+
         if i > 1:
             map_ab = pd.concat([map_ab,GPSData_ab],ignore_index=True)
             #map_ab = IndependentPoint(map_ab,L=300,Nclusters=2)
-            
+
     print(i)
     #if i>1000:
      #   break
 map_ab = fun.IndependentPoint(map_ab,L=300,Nclusters=2)
 
 
-#==============================================================================
-# 利用MDS方法判断异常驾驶员
-#==============================================================================
-from sklearn.manifold import MDS
-
-'''
-构造一个空数据框，共13列，行数量为驾驶人数量，列名为MDS_colnames
-
-'''
-MDS_colnames = ["ID","Acc_23","Acc_34","Acc_45","Acc_56","Acc_67","Acc_78",
-                   "Dac_23","Dac_34","Dac_45","Dac_56","Dac_67","Dac_78"]
-
-testNum = 200
-vehicleIDList = GPSData_initial.drop_duplicates(['vehicleID'])['vehicleID']    #提取车辆ID
-vehicleIDList = vehicleIDList[0:testNum]
-mdsData = pd.DataFrame(index=np.arange(0,len(vehicleIDList)),columns=MDS_colnames)
-
-
-#生成驾驶人特征数据框，行为驾驶人ID，列为特征项
-quant = 0.85 #日常特征，取85位
-for i in range(len(vehicleIDList)):
-    print(i)
-    IDn = vehicleIDList.iloc[i]
-    GPSData = GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn].copy()
-    if len(GPSData.loc[GPSData["GPS_Speed"] > 0]) > vehicleNum : #数据过少的不纳入计算
-        GPSData = fun.vehicleDataINI(GPSData)
-        acc = GPSData.loc[GPSData['Acc']>0 ]
-        dac = GPSData.loc[GPSData['Acc']<0 ]
-        if len(acc)>0 and len(dac)>0:
-            abnormalStandard = fun.fun_abnormalACC(GPSData,quant)
-            Stdlen = len(abnormalStandard['speed_split'])
-            if Stdlen>8 :
-                Stdlen = 8
-            if Stdlen>2:    
-                temp = [IDn]
-                temp.extend(abnormalStandard.T.iloc[0,:][2:Stdlen].tolist())
-                for k in range(8-Stdlen): 
-                    temp.append('nan')
-                temp.extend(abnormalStandard.T.iloc[2,:][2:Stdlen].tolist())
-                for k in range(8-Stdlen):
-                    temp.append('nan')
-                mdsData.iloc[i]=temp
-
-mdsData = mdsData.loc[pd.isnull(mdsData["ID"]) == False] #剔除ID为‘nan’的数据
-
-'''
-利用拉格朗日插值法填充缺失数据
-'''
-from scipy.interpolate import lagrange
-
-def lagrangeFillnan(y,n,k=2):
-   # y = s[list(range(n-k, n)) + list(range(n+1, n+1+k))] #取数
-    y = y[y.notnull()]
-    result = lagrange(y.index, list(y))(n) #插值并返回插值结果
-    return(result)
-
-
-mdsfillnan = mdsData[["Dac_23","Dac_34","Dac_45","Dac_56","Dac_67","Dac_78"]].T
-mdsfillnan = mdsfillnan.apply(lambda x: pd.to_numeric(x, errors='coerce'))
-mdsfillnan.index = list(range(2, 8))
-
-#逐个元素判断是否需要插值
-for i in mdsfillnan:
-    #print('i=',i)
-    for j in range(len(mdsfillnan)):
-        #print('j=',j)
-        #print(mdsfillnan[i].isnull().iloc[j])
-        if (mdsfillnan[i].isnull().iloc[j]): #如果为空即插值。
-            print('i=',i)
-            print('j=',j)
-            y = mdsfillnan[i]
-            y = y[y.notnull()]
-            mdsfillnan[i].values[j] = lagrange(y.index, list(y))(j)
-
-mdsfillnan = mdsfillnan.T            
-            
-'''
-利用df.interpolate方法填充缺失值(按行填充不成功，只能按列填充)
-
-mdsfillnan = mdsData[["Dac_23","Dac_34","Dac_45","Dac_56","Dac_67","Dac_78"]]
-
-#mdsfillnan = mdsData[["Acc_23","Acc_34","Acc_45","Acc_56","Acc_67","Acc_78",
-#                   "Dac_23","Dac_34","Dac_45","Dac_56","Dac_67","Dac_78"]]
-
-mdsfillnan = mdsfillnan.apply(lambda x: pd.to_numeric(x, errors='coerce'))
-#a = a.interpolate(method='spline', order=2)    
-mdsfillnan = mdsfillnan.interpolate(method='values', axis=0,
-                                   limit=testNum, limit_direction='both') 
-'''
-  
-'''
-sklearn
-'''
-mds = MDS()
-mds.fit(mdsfillnan)
-mdsResult = mds.embedding_
-mdsResult = pd.DataFrame(mdsResult)
-mdsResult['ID'] = mdsData['ID'].values
-mdsResult = mdsResult.rename(columns={0:'x',1:'y'})
-mdsLen = len(mdsResult['ID'])
-
-import matplotlib.pyplot as plt
-plt.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
-plt.rcParams['axes.unicode_minus']=False #用来正常显示负号
-
-#plt.hist(mdsData['Acc_23'], bins=6)
-plt.scatter(mdsResult['x'],mdsResult['y'],color='turquoise')
-plt.scatter(mdsResult['x'],mdsResult['y'],color='turquoise')
-
-import seaborn as sns
-sns.set_style('darkgrid')
-
-sns.jointplot(x=mdsResult['x'],y=mdsResult['y'],kind='kde') #核密度估计
-sns.stripplot(x='x',y='y',data=mdsResult) #绘制散点图
-sns.regplot(x='x',y='y',data=mdsResult)
-
-sns.stripplot(x="latitude",y="longitude",data=GPSData_ab) #绘制路由图
-
-
-
-# =============================================================================
-# 测试matplotlib绘图
-# =============================================================================
-labels='frogs','hogs','dogs','logs'
-sizes=15,20,45,10
-colors='yellowgreen','gold','lightskyblue','lightcoral'
-explode=0,0.1,0,0
-plt.pie(sizes,explode=explode,labels=labels,colors=colors,autopct='%1.1f%%',shadow=True,startangle=50)
-plt.axis('equal')
-plt.show()
-
-plt.plot([1, 2, 3, 4], [1, 4, 9, 16])
-
-# =============================================================================
-# 利用Kmeans聚类，筛选高危异常驾驶行为驾驶人
-# =============================================================================
 
 
 

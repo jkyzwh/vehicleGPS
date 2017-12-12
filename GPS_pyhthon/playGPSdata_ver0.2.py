@@ -147,7 +147,7 @@ def regeocode(longitude,latitude):
     #base = 'http://172.16.0.105/GPS2ROAD.asp?'
     #base = 'http://211.103.187.183//GPS2ROAD.asp?'
     #内网网址，http://172.16.0.105;外网网址，http://211.103.187.183/
-    base = 'http://172.16.90.47/ASP/GPS2ROAD.asp？'
+    #base = 'http://172.16.90.47/ASP/GPS2ROAD.asp？'
     base = 'http://localhost/ASP/GPS2ROAD.asp?'
     url=base+'lng='+str(longitude)+'&lat='+str(latitude)
     result = ''

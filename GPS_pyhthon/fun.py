@@ -176,7 +176,7 @@ def vehicleinfo(GPSData_initial):
         vehicle_information['ID'].values[i] = IDn
         vehicle_information["begintime"].values[i] = GPSData['GpsTime'].iloc[0]
         vehicle_information["endtime"].values[i] = GPSData['GpsTime'].iloc[len(GPSData)-1]
-        vehicle_information["distance"].values[i] = sum(GPSData['spacing'])
+        vehicle_information["distance"].values[i] = np.nansum(GPSData['spacing'])
         
         a = GPSData.loc[GPSData['GPS_Speed'] > 0].copy()
         if len(a) == 0:
@@ -190,7 +190,7 @@ def vehicleinfo(GPSData_initial):
             vehicle_information['speed_min'].values[i] = min(a['GPS_Speed'])
             vehicle_information['speed_max'].values[i] = max(a['GPS_Speed'])
             vehicle_information['unzerospeedNum'].values[i] = len(a['GPS_Speed'])
-            vehicle_information["drivingtime"].values[i] = sum(a['Time_diff'].values)
+            vehicle_information["drivingtime"].values[i] = np.nansum(a['Time_diff'])
              
         if i>19:
             break
@@ -215,7 +215,7 @@ def vehicleinfo2(GPSData_initial):
         a['ID'] = IDn
         a["begintime"] = str(GPSData['GpsTime'].iloc[0])
         a["endtime"] = str(GPSData['GpsTime'].iloc[len(GPSData)-1])
-        a["distance"] = sum(GPSData['spacing'])
+        a["distance"] = np.nansum(GPSData['spacing'])
         
         b = GPSData.loc[GPSData['GPS_Speed'] > 0].copy()
         if len(b) == 0:
@@ -230,12 +230,12 @@ def vehicleinfo2(GPSData_initial):
             a['speed_min'] = min(b['GPS_Speed'])
             a['speed_max'] = max(b['GPS_Speed'])
             a['unzerospeedNum'] = len(b['GPS_Speed'])
-            a["drivingtime"] = sum(b['Time_diff'].values)
+            a["drivingtime"] = np.nansum(b['Time_diff'])
             a["roadNum"] = 0
             a["timeAll"] = 0
         vehicle_information = vehicle_information.append(a,ignore_index=True)     
-        if i>100:
-            break
+        #if i>100:
+            #break
     vehicle_information["begintime"] = pd.to_datetime(vehicle_information["begintime"])
     vehicle_information["endtime"] = pd.to_datetime(vehicle_information["endtime"])
     vehicle_information["timeAll"] = (vehicle_information["endtime"]-vehicle_information["begintime"])/np.timedelta64(1, 's')
@@ -388,6 +388,38 @@ def IndependentPoint(map_ab,L=300,Nclusters=2):
     #plt.show()
     return (map_ab)
 
+# # =============================================================================
+# 利用高德地图ASP，利用GPS坐标获取道路信息
+# =============================================================================
+
+from selenium import webdriver
+import time
+
+def regeocode(longitude,latitude):
+    driver = webdriver.PhantomJS()  # 利用无头浏览器
+    #base = 'http://172.16.0.105/GPS2ROAD.asp?'
+    #base = 'http://211.103.187.183//GPS2ROAD.asp?'
+    #内网网址，http://172.16.0.105;外网网址，http://211.103.187.183/
+    #base = 'http://172.16.90.47/ASP/GPS2ROAD.asp？'
+    base = 'http://localhost/ASP/GPS2ROAD.asp?'
+    url=base+'lng='+str(longitude)+'&lat='+str(latitude)
+    result = ''
+    i=0
+    t_star = time.time()
+    try:
+        driver.get(url)
+    except :
+        print('数据出错')
+        result = '数据出错;请查找原因'
+    #循环等待返回结果，拿到结果，或者达到i设定的循环还没有返回结果就跳出循环
+    while result=='':
+        i+=1
+        result = driver.find_element_by_id("result").text
+        t_end = time.time()
+        if i>500:
+            re_time=t_end - t_star
+            result='没有取到结果;用时'+str(re_time)+'秒'
+    return (result)
 
 
 

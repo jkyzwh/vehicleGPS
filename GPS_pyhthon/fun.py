@@ -288,43 +288,52 @@ def vehicleinfo (GPSData_initial):
 def vehicleinfo2(GPSData_initial):
     GPSData_initial['GpsTime'] = pd.to_datetime(GPSData_initial['GpsTime'])
     ID = GPSData_initial.drop_duplicates(['vehicleID'])['vehicleID']
-    colnames = ["ID", "speed_min", "speed_max", "unzerospeedNum", "begintime", "endtime",
-                "timeAll", "drivingtime", "roadNum", "distance"]
+    colnames = ["ID", "AlldataNum", "unzerospeedNum",
+                "speed_min", "speed_max",
+                "begintime", "endtime", "timeAll", "drivingtime",
+                "timespaceMax", "timespaceMode", "roadNum", "distance"]
     vehicle_information = pd.DataFrame(columns=colnames)
     a = pd.Series()
     for i in range(len(ID.index)):
         print("i=", i)
         IDn = ID.iloc[i]
         GPSData = GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn].copy()
-        GPSData = vehicleDataINI(GPSData)
-        a['ID'] = IDn
-        a["begintime"] = str(GPSData['GpsTime'].iloc[0])
-        a["endtime"] = str(GPSData['GpsTime'].iloc[len(GPSData) - 1])
-        a["distance"] = np.nansum(GPSData['spacing'])
+        # 记录数据过少的ID可以不纳入分析范围
+        if len(GPSData.index) > 100:
+            GPSData = vehicleDataINI(GPSData)
+            print(IDn, len(GPSData.index))
+            a['ID'] = IDn
+            a["begintime"] = str(GPSData['GpsTime'].iloc[0])
+            a["endtime"] = str(GPSData['GpsTime'].iloc[len(GPSData) - 1])
+            a["distance"] = np.nansum(GPSData['spacing'])
+            a["AlldataNum"] = len(GPSData.index)
+            a["timespaceMax"] = np.nanmax(GPSData['Time_diff'])
 
-        b = GPSData.loc[GPSData['GPS_Speed'] > 0].copy()
-        if len(b) == 0:
-            a['speed_min'] = 0
-            a['speed_max'] = 0
-            a['unzerospeedNum'] = 0
-            a["drivingtime"] = 0
-            a["roadNum"] = 0
-            a["timeAll"] = 0
+            b = GPSData.loc[GPSData['GPS_Speed'] > 0].copy()
+            if len(b) == 0:
+                a['speed_min'] = 0
+                a['speed_max'] = 0
+                a['unzerospeedNum'] = 0
+                a["drivingtime"] = 0
+                a["roadNum"] = 0
+                a["timeAll"] = 0
+                a["timespaceMode"] = 0  # 众数
 
-        if len(b) > 0:
-            a['speed_min'] = min(b['GPS_Speed'])
-            a['speed_max'] = max(b['GPS_Speed'])
-            a['unzerospeedNum'] = len(b['GPS_Speed'])
-            a["drivingtime"] = np.nansum(b['Time_diff'])
-            a["roadNum"] = 0
-            a["timeAll"] = 0
-        vehicle_information = vehicle_information.append(a, ignore_index=True)
-        # if i>100:
-        # break
+            if len(b) > 0:
+                a['speed_min'] = min(b['GPS_Speed'])
+                a['speed_max'] = max(b['GPS_Speed'])
+                a['unzerospeedNum'] = len(b['GPS_Speed'])
+                a["drivingtime"] = np.nansum(b['Time_diff'])
+                a["roadNum"] = 0
+                a["timeAll"] = 0
+                a["timespaceMode"] = GPSData['Time_diff'].mode()[0]  # 众数
+            vehicle_information = vehicle_information.append(a, ignore_index=True)
+        # if i>500:
+            # break
     vehicle_information["begintime"] = pd.to_datetime(vehicle_information["begintime"])
     vehicle_information["endtime"] = pd.to_datetime(vehicle_information["endtime"])
-    vehicle_information["timeAll"] = (vehicle_information["endtime"] - vehicle_information[
-        "begintime"]) / np.timedelta64(1, 's')
+    vehicle_information["timeAll"] = \
+        (vehicle_information["endtime"] - vehicle_information["begintime"]) / np.timedelta64(1, 's')
     return (vehicle_information)
 
 
@@ -333,8 +342,6 @@ def vehicleinfo2(GPSData_initial):
 '''
 1. 计算输入数据框中相对固定里程道路区间内的坐标点数量
 '''
-
-
 # =============================================================================
 def Numcoordinate (GPSData, L=100):
     # GPSData = GPSData.sort_values(by=['longitude','latitude'],ascending=True)
@@ -490,10 +497,10 @@ import time
 def regeocode(longitude, latitude):
     driver = webdriver.PhantomJS()  # 利用无头浏览器
     # base = 'http://172.16.0.105/GPS2ROAD.asp?'
-    # base = 'http://211.103.187.183//GPS2ROAD.asp?'
+    base = 'http://211.103.187.183//GPS2ROAD.asp?'
     # 内网网址，http://172.16.0.105;外网网址，http://211.103.187.183/
     # base = 'http://172.16.90.47/ASP/GPS2ROAD.asp？'
-    base = 'http://localhost/ASP/GPS2ROAD.asp?'
+    # base = 'http://localhost/ASP/GPS2ROAD.asp?'
     url = base + 'lng=' + str(longitude) + '&lat=' + str(latitude)
     result = ''
     i = 0

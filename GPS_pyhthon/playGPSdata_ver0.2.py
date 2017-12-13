@@ -196,7 +196,7 @@ for i in range(len(effectiveData_info.index)):
     IDn = effectiveData_info['ID'].values[i]
     print("i=",i)
     if i == 1:
-        effectiveData =  GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn].copy()
+        effectiveData = GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn].copy()
     if i>1:
         effectiveData = effectiveData.append(GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn])
 
@@ -208,9 +208,9 @@ for i in range(len(effectiveData_info.index)):
 #ID = vehicle_information[vehicle_information['unzerospeedNum']==98]['ID'].values[0]    
 #GPSData = GPSData_initial[GPSData_initial['vehicleID']==ID] 
 
-col_name = ["vehicleID","longitude","latitude","GPS_Speed","direction","elevation","GpsTime",\
-           'lon_fix','lat_fix','lon_GD','lat_GD','dis_to_GD','city',\
-           'roadName', 'roadType','roadWidth','lon_roadbegin','lat_roadbegin','dis_to_BP',\
+col_name = ["vehicleID", "longitude", "latitude", "GPS_Speed", "direction", "elevation", "GpsTime", \
+           'lon_fix', 'lat_fix', 'lon_GD', 'lat_GD', 'dis_to_GD', 'city', \
+           'roadName', 'roadType', 'roadWidth', 'lon_roadbegin', 'lat_roadbegin', 'dis_to_BP', \
            'roadpath']
     
 effectiveData = effectiveData.reindex(columns=col_name) 

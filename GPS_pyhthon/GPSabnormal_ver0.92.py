@@ -6,49 +6,41 @@ Created on Tue Jul 25 16:14:31 2017
 聚类分析
 @author: Zhwh-notbook
 """
+__author__ = "张巍汉"
+
 import os
 import random
 import pandas as pd
 import fun
 import time
+from filename import data_file_path, PROJECT_ROOT
 
 # import math
 # import numpy as np
 # import datetime as dt
 
-
-os.chdir("D:\\GitHubTree\\vehicleGPS\\GPS_pyhthon")   # 修改当前工作目录
-os.getcwd()    # 获取当前工作目录
+os.chdir(PROJECT_ROOT)   # 修改当前工作目录为当前脚本所在目录
+# os.getcwd()    # 获取当前工作目录
 
 # ==============================================================================
 # 导入原始数据，对原始数据的列进行标准化命名
 # ==============================================================================
-dataName = 'D:\\PROdata\\Data\\dangerous good transport\\sichuan-xcar-2016080810.csv'
+# dataName = 'D:\\PROdata\\Data\\dangerous good transport\\sichuan-xcar-2016080810.csv'
 # dataName = '/home/zhwh/Data/sichuan-xcar-2016080810.csv'
 colname = ["vehicleID", "longitude", "latitude", "GPS_Speed", "direction", "elevation", \
            "GpsTime"]
 print('读入两客一危数据')
-GPSData_initial = pd.read_csv(dataName, header=0)
+GPSData_initial = pd.read_csv(data_file_path, header=0)
 GPSData_initial.columns = colname
 
 # =============================================================================
 # 对所有车辆的数据基本属性进行描述
 # =============================================================================
-'''
-记录函数运行时间，vehicleinfo()与vehicleinfo2()函数执行效率基本相当
-'''
-#import time
-#start = time.time()
-#vehicle_information =  vehicleinfo2(GPSData_initial)
-#end = time.time()
-#print (end-start)
 
 vehicle_information = fun.vehicleinfo2(GPSData_initial)
 
-'''
-筛选速度非零数据行大于100，GPS数据采样间隔小于60S的数据
-'''
-effectiveData_info = vehicle_information[(vehicle_information['unzerospeedNum'] >= 100) & \
+# 筛选速度非零数据行大于200，GPS数据采样间隔小于60S的数据
+effectiveData_info = vehicle_information[(vehicle_information['unzerospeedNum'] >= 200) &
                                          (vehicle_information['timespaceMode'] <= 60)]
 
 for i in range(len(effectiveData_info.index)):
@@ -70,14 +62,10 @@ col_name = ["vehicleID", "longitude", "latitude", "GPS_Speed", "direction", "ele
 
 effectiveData = effectiveData.reindex(columns=col_name)
 
-'''
-为便于计算，将数据框指定为字符型
-'''
+# 为便于计算，将数据框指定为字符型
 effectiveData = effectiveData.astype(str)
 
-'''
-抓取高德地图信息
-'''
+# 抓取高德地图信息
 t_star0 = time.time()  # 开始处理数据，以此时为数据处理起点时间
 # i=0#数据条数
 for i in range(len(effectiveData.index)):  # 开始数据处理大循环
@@ -89,9 +77,11 @@ for i in range(len(effectiveData.index)):  # 开始数据处理大循环
     latitude = effectiveData["latitude"].values[i]  # 取纬度，肯定是北纬
     roads_info = fun.regeocode(longitude, latitude)  # 调用函数，取回结果
 
-    '''以下对返回结果进行字符串解析。解析方式和结果定义形式有关。
-    如一个取回的结果“106.749118,31.86048,106.749,31.8613,105,巴中市,云台街,省道,8,106.747231,31.860627,473;106.747231,31.860627,106.749465,31.861792”，
-    分号把“道路全坐标”和其他数据分开了，其他数据之间用逗号分隔'''
+    """
+    # '以下对返回结果进行字符串解析。解析方式和结果定义形式有关。\n'
+    # 如一个取回的结果“106.749118,31.86048,106.749,31.8613,105,巴中市,云台街,省道,8,106.747231,31.860627,473;106.747231,31.860627,106.749465,31.861792”，\n'
+    # 分号把“道路全坐标”和其他数据分开了，其他数据之间用逗号分隔')
+    """
     roads0 = roads_info.split(';')  # 分离“道路全坐标”和其他数据
     roads = roads0[0].split(',')
     if str(roads[0]).find('没有取到结果') < 0:
@@ -119,9 +109,7 @@ for i in range(len(effectiveData.index)):  # 开始数据处理大循环
 # =============================================================================
 # 筛选异常驾驶行为点
 # =============================================================================
-'''
-将GPS时间转换为time类型
-'''
+# 将GPS时间转换为time类型
 GPSData_initial['GpsTime'] = pd.to_datetime(GPSData_initial['GpsTime'])
 vehicleNum = 50  #vehicleNum是有效ID数据中速度大于零的最小数量
 ID = GPSData_initial.drop_duplicates(['vehicleID'])['vehicleID']    #提取车辆ID

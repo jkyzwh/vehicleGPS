@@ -6,6 +6,8 @@ Created on Tue Jul 25 16:14:31 2017
 聚类分析
 @author: Zhwh-notbook
 """
+__author__ = "张巍汉"
+
 import math
 import pandas as pd
 import numpy as np
@@ -203,16 +205,17 @@ def funAbnormalData(GPSData, probs=0.95):
 # 定义函数，将每个ID的数据整理为可以进行异常行为识别的数据
 # ==============================================================================
 def vehicleDataINI(GPSData):
+
+    # 按照时间顺序排序，去除时间重复的数据行，然后计算各项数据值
+    GPSData = GPSData.drop_duplicates(['GpsTime'])  # 删除重复的时间
+    GPSData = GPSData.sort_values(by=['GpsTime'], ascending=True)  # 按照时间值排序
+
     GPSData['year'] = GPSData.loc[:, 'GpsTime'].dt.year  # 计算年份
     GPSData['month'] = GPSData.loc[:, 'GpsTime'].dt.month  # 计算月份
     GPSData['day'] = GPSData.loc[:, 'GpsTime'].dt.day  # 计算日期
     GPSData['hour'] = GPSData.loc[:, 'GpsTime'].dt.hour  # 计算小时
     GPSData['dayofweek'] = GPSData.loc[:, 'GpsTime'].dt.weekday_name  # 计算星期几
-    '''
-     按照时间顺序排序，去除时间重复的数据行，然后计算各项数据值
-     '''
-    GPSData = GPSData.drop_duplicates(['GpsTime'])  # 删除重复的时间
-    GPSData = GPSData.sort_values(by=['GpsTime'], ascending=True)  # 按照时间值排序
+
     '''
      计算两行之间的时间差，以秒计算
      Pandas计算出的时间间隔数据的类型是np.timedelta64, 不是Python标准库中的timedelta类型，
@@ -221,6 +224,11 @@ def vehicleDataINI(GPSData):
     GPSData['Time_diff'] = GPSData['GpsTime'].diff().map(lambda x: x / np.timedelta64(1, 's'))
     GPSData['Speed_diff'] = GPSData['GPS_Speed'].diff()  # 速度差值
     GPSData['direction_diff'] = GPSData['direction'].diff()  # 方位角变化
+
+    GPSData['Time_diff'].values[0] = 0
+    GPSData['Speed_diff'].values[0] = 0
+    GPSData['direction_diff'].values[0] = 0
+
     GPSData['Acc'] = GPSData['Speed_diff'] / GPSData['Time_diff']  # 加速度计算
     '''
      调用函数，计算相邻点之间的距离

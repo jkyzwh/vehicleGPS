@@ -11,6 +11,9 @@ __author__ = "张巍汉"
 import urllib3
 import time
 
+begin = "http://restapi.amap.com/v3/autograsp?"
+output = "&output=json"
+key = "&key=2aaa2fd1515f77aa9a6061a202737458"
 
 # 定义函数计算Unix时间戳
 def timestamp(local_st):
@@ -21,12 +24,10 @@ def timestamp(local_st):
     return timeStamp
 
 
-begin = "http://restapi.amap.com/v3/autograsp?"
-carid = "&carid=" + "7458" + str(data['vehicleID'].values[0])
-output = "&output=json"
-key = "&key=2aaa2fd1515f77aa9a6061a202737458"
 
 for i in range(len(data.index) - 2):
+    carid = "&carid=" + "7458" + str(data['vehicleID'].values[0])
+
     time1 = timestamp(data['GpsTime'].iloc[i])
     time2 = timestamp(data['GpsTime'].iloc[i + 1])
     time3 = timestamp(data['GpsTime'].iloc[i + 2])

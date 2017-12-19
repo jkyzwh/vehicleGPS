@@ -13,3 +13,4 @@ PROJECT_ROOT = os.path.dirname(os.path.realpath(__file__))
 file_path = os.path.split(os.path.split(PROJECT_ROOT)[0])[0]
 # 文件路径
 data_file_path = os.path.join(file_path, "Data\\sichuan-xcar-2016080810.csv")
+data_file_path_linux = os.path.join(file_path, "Data/sichuan-xcar-2016080810.csv")

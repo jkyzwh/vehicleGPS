@@ -13,7 +13,7 @@ import random
 import pandas as pd
 import fun
 import time
-from filename import data_file_path, PROJECT_ROOT
+from filename import data_file_path, PROJECT_ROOT, data_file_path_linux
 
 # import math
 # import numpy as np
@@ -30,7 +30,10 @@ os.chdir(PROJECT_ROOT)   # 修改当前工作目录为当前脚本所在目录
 colname = ["vehicleID", "longitude", "latitude", "GPS_Speed", "direction", "elevation", \
            "GpsTime"]
 print('读入两客一危数据')
-GPSData_initial = pd.read_csv(data_file_path, header=0)
+
+f = open(data_file_path_linux)
+
+GPSData_initial = pd.read_csv(f)
 GPSData_initial.columns = colname
 
 # =============================================================================

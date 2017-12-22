@@ -1,0 +1,163 @@
+﻿<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>GPS点识别道路信息程序</title>
+    <link rel="stylesheet" href="http://cache.amap.com/lbs/static/main1119.css"/>
+    <script type="text/javascript" src="http://webapi.amap.com/maps?v=1.4.1&key=771f529bb4d20b88fc847b8f1954b737&plugin=AMap.Geocoder,AMap.Driving"></script>
+    <script type="text/javascript" src="http://cache.amap.com/lbs/static/addToolbar.js"></script>
+</head>
+<body  onload="regeocoder()">
+	
+	
+<div id="container"></div>
+<div id="panel"></div>
+<div id="tip">
+    <b>识别结果:</b>
+    <span id="result"></span>
+</div>
+<script type="text/javascript">
+
+   var sHref=window.location.href;//网址传递经纬度的条件变量
+   var lng;//经度
+   var lat;//纬度
+    var roadid;//高德道路ID
+    var clnglatXY;//glnglatxy距离道路最近的道路上坐标点
+    var glnglatXY;//火星坐标系下的条件点
+    var cityname;//所在城市
+    var roadname;//高德道路名称
+    var distance;//glnglatXY距离求出的道路最近的距离，即clnglatXY与glnglatXY的距离
+    var station;//clnglatXY距离高德体系下识别得到的道路起点导航距离，近似看做桩号
+    var pathArr=[];//所求道路集的坐标集合
+    var pathArr1=[];//所求道路的坐标集合
+    var map = new AMap.Map("container", {
+        resizeEnable: true,
+		zoom: 18
+    });
+     GetArgsFromHref(sHref);
+     
+       lnglatXY = [lng,lat]; //已知点坐标
+       cll();
+            
+    	function GetArgsFromHref (sHref){
+      var args    = sHref.split("?");
+      var retval = "";
+     
+      if(args[0] == sHref) /*参数为空*/
+      {
+           return retval; /*无需做任何处理*/
+      }  
+      var str = args[1];
+      args = str.split("&");
+         var s=args[0].split("=");
+          lng=s[1];
+         s=args[1].split("=");
+         lat=s[1];
+}
+    function cll() {//转换GPS点成为高德火星坐标得到glnglatXY
+     AMap.convertFrom(lnglatXY, "gps", function(status,result) {
+     	
+                glnglatXY = result.locations[0];
+                
+                //alert(typeof(result.locations[0]));
+        });
+    }
+    function regeocoder() {  //逆地理编码求道路信息
+        var geocoder = new AMap.Geocoder({
+            radius: 1000,
+            extensions: "all"
+        });
+        geocoder.getAddress(glnglatXY, function(status, result) {
+            if (status === 'complete' && result.info === 'OK') {
+                geocoder_CallBack(result);
+            }
+        });
+        var marker = new AMap.Marker({  //加点
+            map: map,
+            position: glnglatXY
+        });
+         var marker1 = new AMap.Marker({  //加点
+            map: map,
+            position: lnglatXY
+        });
+
+      }
+    function geocoder_CallBack(data) {//逆地理编码的回调函数初求道路
+    	 if(data.regeocode.roads.length!=0){
+         roadid = data.regeocode.roads[0].id; 
+         cityname=data.regeocode.addressComponent.city;
+         roadname=data.regeocode.roads[0].name;
+         clnglatXY=data.regeocode.roads[0].location;
+         distance=data.regeocode.roads[0].distance;
+         roadSearch(cityname,roadname);
+      var marker2 = new AMap.Marker({  //加点
+            map: map,
+            position: clnglatXY
+        });
+    }
+    else{
+    	document.getElementById("result").innerHTML = glnglatXY+","+clnglatXY+","+distance+","+cityname+","+roadccc.name+","+roadccc.type+","+roadccc.width+","+roadccc.path[0][0]+","+station+";"+pathArr[0];
+    	}
+  }
+    function roadSearch(cityname,roadname) {//利用城市名和道路名活动道路详细信息roadinfo对象
+		    var MSearch;
+		    
+		    AMap.service(["AMap.RoadInfoSearch"], function() {        
+		        MSearch = new AMap.RoadInfoSearch({ //构造地点查询类
+		            pageSize:100,
+		            pageIndex:100,
+		            city:cityname 
+		        }); 
+		        //关键字查询
+		        MSearch.roadInfoSearchByRoadName(roadname, function(status, result){
+		        	if(status === 'complete' && result.info === 'OK'){
+		        		roadSearch_CallBack(result); 
+		        	}
+		        	else{
+		        	document.getElementById("result").innerHTML = glnglatXY+","+clnglatXY+","+distance+","+cityname+","+roadname+",undefined,undefined,undefined,undefined,undefined";
+		        	}
+		        }); 
+		    });
+		}
+    function roadSearch_CallBack(data) { //roadinfo的回调函数
+    	   var roadArr = data.roadInfo;
+		    var resultCount = roadArr.length;
+		    for (var i = 0; i < resultCount; i++) {   
+		    var roadccc = data.roadInfo[i];
+		    if (roadccc.id===roadid || roadccc.name===roadname){
+		     pathArr = roadccc.path;
+		            var polyline = new AMap.Polyline({
+		                map: map,
+		                path: pathArr[0],  
+		                strokeColor: "#3366FF"//线颜色
+		            });
+		         var opts = {
+                map:map,
+                hideMarkers:true,
+                extensions: "all"
+                    }; 
+		          var driving = new AMap.Driving(opts);
+                driving.search(roadccc.path[0][0], glnglatXY,opts,function(status, result){
+		        	if(status === 'complete' && result.info === 'OK'){
+		        		driving_CallBack(result); 
+		        	}
+		    		 map.setFitView();
+		  document.getElementById("result").innerHTML = glnglatXY+","+clnglatXY+","+distance+","+cityname+","+roadccc.name+","+roadccc.type+","+roadccc.width+","+roadccc.path[0][0]+","+station+";"+pathArr[0];
+		        });
+		               }
+		               else{
+		               document.getElementById("result").innerHTML = glnglatXY+","+clnglatXY+","+distance+","+cityname+","+roadccc.name+","+roadccc.type+","+roadccc.width+","+roadccc.path[0][0]+","+station+";"+pathArr[0];	
+		               	};
+		               	
+		             }
+		            }
+ function driving_CallBack(data) {
+     var drivingroute=data.routes[0];
+     station=drivingroute.distance;
+       
+		}
+</script>
+</body>
+</html>

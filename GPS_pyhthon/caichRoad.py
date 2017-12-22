@@ -10,20 +10,64 @@ __author__ = "张巍汉"
 
 import urllib3
 import time
+import math
+import json
 
 begin = "http://restapi.amap.com/v3/autograsp?"
 output = "&output=json"
 key = "&key=2aaa2fd1515f77aa9a6061a202737458"
 
-# 定义函数计算Unix时间戳
+# 定义函数计算Unix时间戳------------------------------------------------------------------
 def timestamp(local_st):
     local_st = str(local_st)
     timeArray = time.strptime(local_st, "%Y-%m-%d %H:%M:%S")
     # 转换为时间戳:
     timeStamp = int(time.mktime(timeArray))
-    return timeStamp
+    return (timeStamp)
+
+# 将GPS坐标转换为高德火星坐标，主函数是GPSToGaoDecoords( GPSData)----------------------------
+def transformLon(x, y):
+  ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * math.sqrt(abs(x))
+  ret = ret + (20.0 * math.sin(6.0 * x * math.pi) + 20.0 * math.sin(2.0 * x * math.pi)) * 2.0 / 3.0
+  ret = ret + (20.0 * math.sin(x * math.pi) + 40.0 * math.sin(x / 3.0 * math.pi)) * 2.0 / 3.0
+  ret = ret + (150.0 * math.sin(x / 12.0 * math.pi) + 300.0 * math.sin(x / 30.0 * math.pi)) * 2.0 / 3.0
+  return (ret)
 
 
+def transformLat(x, y):
+  ret = (-100.0) + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 *math.sqrt(abs(x))
+  ret = ret + (20.0 * math.sin(6.0 * x * math.pi) + 20.0 * math.sin(2.0 * x * math.pi)) * 2.0 / 3.0
+  ret = ret + (20.0 * math.sin(y * math.pi) + 40.0 * math.sin(y / 3.0 * math.pi)) * 2.0 / 3.0
+  ret = ret + (160.0 * math.sin(y / 12.0 * math.pi) + 320 * math.sin(y * math.pi / 30.0)) * 2.0 / 3.0
+  return (ret)
+
+
+def GPSToGaoDecoords(GPSData):
+    a = 6378245.0
+    ee = 0.00669342162296594323
+    colnames = ["vehicleID", "lon", "lat", "GPS_Speed", "direction", "elevation", "GpsTime"]
+    GPSData.columns = colnames
+    GPSData['latitude'] = 0
+    GPSData['longitude'] = 0
+    GPSData['latitude'] = GPSData['latitude'].astype(float)
+    GPSData['longitude'] = GPSData['longitude'].astype(float)
+
+    for i in range(len(GPSData.index)):
+        dLat = transformLat(GPSData['lon'].iloc[i] - 105.0, GPSData['lat'].iloc[i] - 35.0)
+        dLon = transformLon(GPSData['lon'].iloc[i] - 105.0, GPSData['lat'].iloc[i] - 35.0)
+        radLat = GPSData['lat'].iloc[i] / 180.0 * math.pi
+        magic = math.sin(radLat)
+        magic = 1 - ee * magic * magic
+        sqrtMagic = math.sqrt(magic)
+        dLat = (dLat * 180.0) / ((a * (1 - ee)) / (magic * sqrtMagic) * math.pi)
+        dLon = (dLon * 180.0) / (a / sqrtMagic * math.cos(radLat) * math.pi)
+        GPSData['latitude'].values[i] = GPSData['lat'].iloc[i] + dLat
+        GPSData['longitude'].values[i] = GPSData['lon'].iloc[i] + dLon
+    result = GPSData[["vehicleID", "longitude", "latitude", "GPS_Speed", "direction", "elevation", "GpsTime"]]
+    return(result)
+
+
+data = GPSToGaoDecoords(data)
 
 for i in range(len(data.index) - 2):
     carid = "&carid=" + "7458" + str(data['vehicleID'].values[0])
@@ -60,4 +104,4 @@ for i in range(len(data.index) - 2):
 
     http = urllib3.PoolManager()
     r = http.request('GET', url)
-    print(r.data)
+    print(json.loads(r.data))

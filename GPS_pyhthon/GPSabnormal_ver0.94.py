@@ -12,6 +12,7 @@ import os
 import random
 import pandas as pd
 import fun
+#import caichRoad
 import time
 from filename import data_file_path, PROJECT_ROOT
 
@@ -45,19 +46,14 @@ effectiveData_info = vehicle_information[(vehicle_information['unzerospeedNum'] 
 
 for i in range(len(effectiveData_info.index)):
     IDn = effectiveData_info['ID'].values[i]
-    print("i=", i)
-    if i == 1:
+    print("effevtivedata i=", i)
+    if i == 0:
         effectiveData = GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn].copy()
-    if i > 1:
-        effectiveData = effectiveData.append(GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn])
-
-# =============================================================================
-# 筛选有使用价值的数据，抓取高德地图道路信息
-# =============================================================================
-
-
-
-
+        effectiveData = caichRoad.getgaodeinfo(effectiveData)
+    if i > 0:
+        temp = GPSData_initial.loc[GPSData_initial['vehicleID'] == IDn].copy()
+        temp = caichRoad.getgaodeinfo(temp)
+        effectiveData = effectiveData.append(temp)
 
 
 
@@ -149,7 +145,7 @@ for i in range(len(ID.index)):
     print(i)
     #if i>1000:
      #   break
-map_ab = fun.IndependentPoint(map_ab,L=300,Nclusters=2)
+map_ab = fun.IndependentPoint(map_ab, L=300, Nclusters=2)
 
 
 

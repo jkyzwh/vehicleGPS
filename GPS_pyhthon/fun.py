@@ -122,7 +122,7 @@ def calcDistance(Lat_A, Lng_A, Lat_B, Lng_B):
              math.sin(xx / 2) ** 2
     dr = flatten / 8 * (c1 - c2)
     distance = ra * (xx + dr)
-    return (distance)
+    return distance
 
 
 # ==============================================================================
@@ -141,7 +141,7 @@ def fun_abnormalACC(GPSData, probs=0.95):
     AccStandard = AccStandard.rename(
         columns={'split': 'speed_split', 'Acc_x': 'ay_abnormalAAC', 'Acc_y': 'ay_abnormalDAC'})
     AccStandard['ay_abnormalDAC'] = 0 - AccStandard['ay_abnormalDAC']
-    return (AccStandard)
+    return AccStandard
 
 
 # =============================================================================
@@ -157,7 +157,7 @@ def fun_abnormalDirection(data, probs=0.95):
         a = angleChange.groupby('speed_split').quantile(q=probs, axis=0, numeric_only=True, interpolation='linear')
         a = a.sort_values(by=['split'], ascending=True)
         a = a.rename(columns={'split': 'speed_split', 'angleChangeRate': 'angleChange_abnormal'})
-    return (a)
+    return a
 
 
 # ==============================================================================
@@ -184,7 +184,8 @@ def funAbnormalData(GPSData, probs=0.95):
             GPSData['ACCabnormal'].values[i] = "ay_AAC"
         if GPSData['Acc'].iloc[i] < 0 and GPSData['Acc'].iloc[i] < GPSData['ay_abnormalDAC'].iloc[i]:
             GPSData['ACCabnormal'].values[i] = "ay_DAC"
-        if GPSData['angleChangeRate'].iloc[i] > 0 and GPSData['angleChangeRate'].iloc[i] < GPSData['angleChange_abnormal'].iloc[i]:
+        if GPSData['angleChangeRate'].iloc[i] > 0 and GPSData['angleChangeRate'].iloc[i] < \
+                GPSData['angleChange_abnormal'].iloc[i]:
             GPSData['angleabnormal'].values[i] = "angle_directionRate"
 
     GPSData_ab = GPSData.loc[(GPSData['ACCabnormal'] != "normal") |
@@ -198,14 +199,13 @@ def funAbnormalData(GPSData, probs=0.95):
             Lng_B = GPSData_ab['longitude'].iloc[i]
             Lat_B = GPSData_ab['latitude'].iloc[i]
             GPSData_ab['spacing'].values[i] = calcDistance(Lat_A, Lng_A, Lat_B, Lng_B) * 1000  # 计算相邻点之间的距离
-    return (GPSData_ab)
+    return GPSData_ab
 
 
 # ==============================================================================
 # 定义函数，将每个ID的数据整理为可以进行异常行为识别的数据
 # ==============================================================================
 def vehicleDataINI(GPSData):
-
     # 按照时间顺序排序，去除时间重复的数据行，然后计算各项数据值
     GPSData = GPSData.drop_duplicates(['GpsTime'])  # 删除重复的时间
     GPSData = GPSData.sort_values(by=['GpsTime'], ascending=True)  # 按照时间值排序
@@ -247,13 +247,13 @@ def vehicleDataINI(GPSData):
 
     GPSData['angleChangeRate'] = abs(GPSData['direction_diff'] / GPSData['spacing'])
     GPSData['speed_split'] = round(GPSData['GPS_Speed'] / 10)
-    return (GPSData)
+    return GPSData
 
 
 # =============================================================================
 # 对不同车辆的基本特征进行整理
 # =============================================================================
-def vehicleinfo (GPSData_initial):
+def vehicleinfo(GPSData_initial):
     GPSData_initial['GpsTime'] = pd.to_datetime(GPSData_initial['GpsTime'])
     ID = GPSData_initial.drop_duplicates(['vehicleID'])['vehicleID']
     colnames = ["ID", "speed_min", "speed_max", "unzerospeedNum", "begintime", "endtime",
@@ -287,7 +287,7 @@ def vehicleinfo (GPSData_initial):
             break
     vehicle_information["timeAll"] = (vehicle_information["endtime"] - vehicle_information[
         "begintime"]) / np.timedelta64(1, 's')
-    return (vehicle_information)
+    return vehicle_information
 
 
 # =============================================================================
@@ -337,12 +337,12 @@ def vehicleinfo2(GPSData_initial):
                 a["timespaceMode"] = GPSData['Time_diff'].mode()[0]  # 众数
             vehicle_information = vehicle_information.append(a, ignore_index=True)
         # if i>500:
-            # break
+        # break
     vehicle_information["begintime"] = pd.to_datetime(vehicle_information["begintime"])
     vehicle_information["endtime"] = pd.to_datetime(vehicle_information["endtime"])
     vehicle_information["timeAll"] = \
         (vehicle_information["endtime"] - vehicle_information["begintime"]) / np.timedelta64(1, 's')
-    return (vehicle_information)
+    return vehicle_information
 
 
 # =============================================================================
@@ -350,8 +350,10 @@ def vehicleinfo2(GPSData_initial):
 '''
 1. 计算输入数据框中相对固定里程道路区间内的坐标点数量
 '''
+
+
 # =============================================================================
-def Numcoordinate (GPSData, L=100):
+def Numcoordinate(GPSData, L=100):
     # GPSData = GPSData.sort_values(by=['longitude','latitude'],ascending=True)
     GPSData = GPSData.sort_values(by=['GpsTime'], ascending=True)
     GPSData['spacing'] = 0
@@ -423,7 +425,7 @@ def Numcoordinate (GPSData, L=100):
         Numpoints["distance"].values[i] = calcDistance(Lat_A, Lng_A, Lat_B, Lng_B) * 1000
 
     Numpoints["Num_per_m"] = Numpoints["pointNum"] / Numpoints["distance"]
-    return (Numpoints)
+    return Numpoints
 
 
 '''
@@ -491,7 +493,7 @@ def IndependentPoint(map_ab, L=300, Nclusters=2):
     map_ab = map_ab.sort_values(by=['vehicleID', 'GpsTime'], ascending=True)
     # plt.scatter(X.ix[:, 0], X.ix[:, 1], c=X.ix[:, 2])
     # plt.show()
-    return (map_ab)
+    return map_ab
 
 
 # # =============================================================================
@@ -526,4 +528,62 @@ def regeocode(longitude, latitude):
         if i > 500:
             re_time = t_end - t_star
             result = '没有取到结果;用时' + str(re_time) + '秒'
-    return (result)
+    return result
+
+
+# =============================================================================
+# 筛选有使用价值的数据，抓取高德地图道路信息
+# =============================================================================
+def getregeocode(map_ab):
+    fundata = map_ab.copy()
+    fundata['lon_fix'] = 0
+    fundata['lat_fix'] = 0
+    fundata['lon_GD'] = 0
+    fundata['lat_GD'] = 0
+    fundata['dis_to_GD'] = 0
+    fundata['city'] = 0
+    fundata['roadName'] = 0
+    fundata['roadType'] = 0
+    fundata['roadWidth'] = 0
+    fundata['lon_roadbegin'] = 0
+    fundata['lat_roadbegin'] = 0
+    fundata['dis_to_BP'] = 0
+    fundata['roadpath'] = 0
+    # 为便于计算，将数据框指定为字符型
+    fundata = fundata.astype(str)
+    # 抓取高德地图信息
+    # t_star = time.time()  # 开始处理数据，以此时为数据处理起点时间
+    for i in range(len(fundata.index)):  # 开始数据处理大循环
+        t_star = time.time()  # 本条数据开始处理的时间,大批处理数据时可以注释掉
+        longitude = fundata["longitude"].values[i]  # 取经度，肯定是东经
+        latitude = fundata["latitude"].values[i]  # 取纬度，肯定是北纬
+        roads_info = regeocode(longitude, latitude)  # 调用函数，取回结果
+        """
+        # '以下对返回结果进行字符串解析。解析方式和结果定义形式有关。\n'
+        # 如一个取回的结果“106.749118,31.86048,106.749,31.8613,105,巴中市,云台街,省道,8,106.747231,31.860627,473;106.747231,31.860627,106.749465,31.861792”，\n'
+        # 分号把“道路全坐标”和其他数据分开了，其他数据之间用逗号分隔')
+        """
+        roads0 = roads_info.split(';')  # 分离“道路全坐标”和其他数据
+        roads = roads0[0].split(',')
+        if str(roads[0]).find('没有取到结果') < 0:
+            fundata['lon_fix'].values[i] = roads[0]
+            fundata['lat_fix'].values[i] = roads[1]
+            fundata['lon_GD'].values[i] = roads[2]
+            fundata['lat_GD'].values[i] = roads[3]
+            fundata['dis_to_GD'].values[i] = roads[4]
+            fundata['city'].values[i] = roads[5]
+            fundata['roadName'].values[i] = roads[6]
+            fundata['roadType'].values[i] = roads[7]
+            fundata['roadWidth'].values[i] = roads[8]
+            fundata['lon_roadbegin'].values[i] = roads[9]
+            fundata['lat_roadbegin'].values[i] = roads[10]
+            fundata['dis_to_BP'].values[i] = roads[11]
+        if len(roads0) > 1:
+            fundata['roadpath'].values[i] = str(roads0[1].split('@'))
+            # 道路全坐标长度不定，有的道路坐标点很多，有的道路很少，如果每个坐标单独储存，反而不好用。这里全部保存在一个单元格，split不是要解析字符串，而是转换成列表
+        else:
+            fundata['roadpath'].values[i] = ['导航数据出现问题']
+        # 在原数据的末尾，添加我们的结果
+        t_end = time.time()  # 处理本条数据的结束时间,大批处理数据时可以注释掉
+        print(i, t_end - t_star)
+    return fundata
